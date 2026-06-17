@@ -52,6 +52,7 @@ dependencies {
     api("org.springframework.boot:spring-boot-starter-actuator")
     api("org.hibernate.orm:hibernate-envers")
     api("io.hypersistence:hypersistence-utils-hibernate-63:3.11.0")
+    api("com.fasterxml.jackson.module:jackson-module-kotlin")
 
     compileOnly("org.springframework.boot:spring-boot-starter-oauth2-resource-server")
 
@@ -60,7 +61,12 @@ dependencies {
 
     testImplementation("org.springframework.boot:spring-boot-starter-test")
     testImplementation("org.springframework.boot:spring-boot-starter-oauth2-resource-server")
+    testImplementation("org.springframework.boot:spring-boot-testcontainers")
     testImplementation("org.springframework.security:spring-security-test")
+    testImplementation(platform("org.testcontainers:testcontainers-bom:2.0.1"))
+    testImplementation("org.testcontainers:junit-jupiter")
+    testImplementation("org.testcontainers:postgresql")
+    testRuntimeOnly("org.postgresql:postgresql")
     testRuntimeOnly("org.junit.platform:junit-platform-launcher")
 }
 

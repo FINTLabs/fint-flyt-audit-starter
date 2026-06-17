@@ -2,8 +2,6 @@
 
 Bibliotek for å håndtere endringslogg, og generell audit-logging i FLYT.
 
-Designet er beskrevet i løsningsanalysen [`docs/losningsanalyse-endringslogg.md`](https://github.com/FINTLabs/fint-flyt-docs/blob/main/docs/losningsanalyse-endringslogg.md) (FFS-2068). Epic for implementasjonen: FFS-2069.
-
 ## Status
 
 Under oppbygging. Prosjekt-skjelettet er på plass (FFS-2102). Konkrete komponenter implementeres i påfølgende oppgaver — se Epic FFS-2069 for full liste.
