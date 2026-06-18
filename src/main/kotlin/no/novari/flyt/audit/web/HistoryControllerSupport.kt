@@ -22,6 +22,11 @@ import org.springframework.web.bind.annotation.PathVariable
  * Navn-hydrering og paginering håndteres i [EnversHistoryService] — denne
  * klassen er bare et tynt REST-lag. Resultater returneres alltid nyeste revisjon
  * først; sortering kan ikke overstyres via request-parametere.
+ *
+ * **Tilgangskontroll:** starteren legger ingen autentiserings- eller autorisasjonsgating
+ * på endepunktet. Konsumenten er ansvarlig for å sikre det — typisk via reverse proxy
+ * (f.eks. ved å montere kontrolleren under et internt path-prefix som allerede er
+ * autentisert i infrastrukturen) eller via Spring Security.
  */
 abstract class HistoryControllerSupport<T : Any, ID : Any>(
     private val historyService: EnversHistoryService<T, ID>,
