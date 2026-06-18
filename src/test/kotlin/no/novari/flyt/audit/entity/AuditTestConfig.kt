@@ -6,8 +6,8 @@ import org.springframework.context.annotation.Bean
 import org.springframework.data.jpa.repository.config.EnableJpaAuditing
 
 @TestConfiguration
-@EnableJpaAuditing(auditorAwareRef = "actorAuditorAware")
+@EnableJpaAuditing(auditorAwareRef = "flytAuditorAware")
 class AuditTestConfig {
-    @Bean
-    fun actorAuditorAware() = ActorAuditorAware()
+    @Bean("flytAuditorAware")
+    fun flytAuditorAware() = ActorAuditorAware()
 }
