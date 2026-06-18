@@ -2,7 +2,6 @@ package no.novari.flyt.audit.history
 
 import jakarta.persistence.EntityManager
 import no.novari.flyt.audit.actor.Actor
-import no.novari.flyt.audit.actor.ActorAuditorAware
 import no.novari.flyt.audit.authorization.AuthorizationClient
 import no.novari.flyt.audit.authorization.AuthorizedUserDto
 import no.novari.flyt.audit.config.ApplicationContextHolder
