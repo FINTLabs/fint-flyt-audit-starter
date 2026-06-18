@@ -85,6 +85,8 @@ CREATE TABLE my_entity_aud (
 
 Legg til `spring.jpa.hibernate.ddl-auto: validate` i produksjonskonfigurasjon.
 
+**Historikk-endepunktet** (`GET /{id}/history`) støtter `page`, `size` og `from`/`to`-filtrering. Sortering er fast: nyeste revisjon returneres alltid først og kan ikke overstyres via request-parametere.
+
 ## OAuth2-oppsett (påkrevd for Variant D/E med historikk-API)
 
 Starteren kaller `fint-flyt-authorization-service` for å hente brukerens navn ved presentasjons-tid. Dette krever OAuth2 `client_credentials`-oppsett med tre konkrete steg.

@@ -21,6 +21,7 @@ import java.time.Instant
  *     : EnversHistoryService<MyEntity, Long>(MyEntity::class.java, em, enrichment)
  * ```
  *
+ * Resultater returneres alltid nyeste revisjon først (fast sortering, kan ikke overstyres).
  * Aktør-navn hydreres i ett batch-kall per side (se [ActorEnrichmentService])
  * for å unngå N+1 mot `fint-flyt-authorization-service`.
  */

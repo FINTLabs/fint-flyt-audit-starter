@@ -3,7 +3,6 @@ package no.novari.flyt.audit.web
 import no.novari.flyt.audit.history.EnversHistoryService
 import no.novari.flyt.audit.history.HistoryFilter
 import org.springframework.data.domain.Pageable
-import org.springframework.data.domain.Sort
 import org.springframework.data.web.PageableDefault
 import org.springframework.web.bind.annotation.GetMapping
 import org.springframework.web.bind.annotation.PathVariable
@@ -21,7 +20,8 @@ import org.springframework.web.bind.annotation.PathVariable
  * som da svarer på `GET /api/intern/min-tjeneste/ting/{id}/history`.
  *
  * Navn-hydrering og paginering håndteres i [EnversHistoryService] — denne
- * klassen er bare et tynt REST-lag.
+ * klassen er bare et tynt REST-lag. Resultater returneres alltid nyeste revisjon
+ * først; sortering kan ikke overstyres via request-parametere.
  */
 abstract class HistoryControllerSupport<T : Any, ID : Any>(
     private val historyService: EnversHistoryService<T, ID>,
@@ -29,7 +29,7 @@ abstract class HistoryControllerSupport<T : Any, ID : Any>(
     @GetMapping("/{id}/history")
     fun history(
         @PathVariable id: ID,
-        @PageableDefault(size = 20, sort = ["timestamp"], direction = Sort.Direction.DESC)
+        @PageableDefault(size = 20)
         pageable: Pageable,
         filter: HistoryFilter,
     ): HistoryPageDto<T> = HistoryPageDto.from(historyService.findHistory(id, pageable, filter))
