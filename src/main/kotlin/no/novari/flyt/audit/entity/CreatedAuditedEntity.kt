@@ -13,6 +13,18 @@ import org.springframework.data.annotation.CreatedDate
 import org.springframework.data.jpa.domain.support.AuditingEntityListener
 import java.time.Instant
 
+/**
+ * Variant B: superklasse som populerer `created_at` (Instant) og `created_by` (JSONB [Actor])
+ * automatisk via Spring Data JPA Auditing.
+ *
+ * Konsumenten eier Flyway-DDL og må inkludere disse kolonnene i sin migrering:
+ * ```sql
+ * created_at  TIMESTAMP WITH TIME ZONE NOT NULL,
+ * created_by  JSONB                    NOT NULL
+ * ```
+ * `@Audited`-entiteter som arver denne klassen trenger ikke speile kolonnene i `_aud`-tabellen
+ * — de er ekskludert fra Envers via `@NotAudited`.
+ */
 @MappedSuperclass
 @EntityListeners(AuditingEntityListener::class, AuditMetricsListener::class)
 abstract class CreatedAuditedEntity {

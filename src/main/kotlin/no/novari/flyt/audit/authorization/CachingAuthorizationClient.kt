@@ -4,6 +4,13 @@ import com.github.benmanes.caffeine.cache.Caffeine
 import java.util.Optional
 import java.util.UUID
 
+/**
+ * Caffeine-cachelag rundt [AuthorizationClient] for å begrense kall mot authorization-service.
+ *
+ * Cache-nøkkel er OID; verdien er `Optional<name>` der tom Optional betyr at OID ikke finnes
+ * eller at brukeren har `null`-navn. TTL og maks størrelse styres av [AuthorizationProperties.Cache].
+ * Aktiveres automatisk via `flyt.audit.authorization.cache.enabled=true` (default).
+ */
 class CachingAuthorizationClient(
     private val delegate: AuthorizationClient,
     props: AuthorizationProperties.Cache,
