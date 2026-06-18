@@ -33,7 +33,7 @@ class AuthorizationClientTest {
         fun authorizationRestClient(
             builder: RestClient.Builder,
             properties: AuthorizationProperties,
-        ): RestClient = builder.baseUrl("${properties.baseUrl}/api/intern-klient/authorization/brukere").build()
+        ): RestClient = builder.baseUrl("${properties.baseUrl}/api/intern-klient/authorization/users").build()
 
         @Bean
         fun authorizationClient(
@@ -56,7 +56,7 @@ class AuthorizationClientTest {
         val dto = AuthorizedUserDto(objectIdentifier = oid, name = "Ola Nordmann")
 
         server
-            .expect(requestTo("http://auth-service/api/intern-klient/authorization/brukere/$oid"))
+            .expect(requestTo("http://auth-service/api/intern-klient/authorization/users/$oid"))
             .andRespond(withSuccess(mapper.writeValueAsString(dto), MediaType.APPLICATION_JSON))
 
         val result = client.findByObjectIdentifier(oid)
@@ -69,7 +69,7 @@ class AuthorizationClientTest {
         val oid = UUID.randomUUID()
 
         server
-            .expect(requestTo("http://auth-service/api/intern-klient/authorization/brukere/$oid"))
+            .expect(requestTo("http://auth-service/api/intern-klient/authorization/users/$oid"))
             .andRespond(withResourceNotFound())
 
         val result = client.findByObjectIdentifier(oid)
@@ -88,7 +88,7 @@ class AuthorizationClientTest {
             )
 
         server
-            .expect(requestTo("http://auth-service/api/intern-klient/authorization/brukere/actions/lookup"))
+            .expect(requestTo("http://auth-service/api/intern-klient/authorization/users/actions/lookup"))
             .andRespond(withSuccess(mapper.writeValueAsString(dtos), MediaType.APPLICATION_JSON))
 
         val result = client.lookupUsers(listOf(oid1, oid2))

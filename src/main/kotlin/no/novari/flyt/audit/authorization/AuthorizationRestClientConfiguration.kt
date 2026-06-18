@@ -48,7 +48,7 @@ class AuthorizationRestClientConfiguration {
         return restClientBuilder
             .requestInterceptor(interceptor)
             .requestFactory(clientHttpRequestFactory)
-            .baseUrl("${props.baseUrl}/api/intern-klient/authorization/brukere")
+            .baseUrl("${props.baseUrl}/api/intern-klient/authorization/users")
             .build()
     }
 
