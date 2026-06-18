@@ -1,6 +1,5 @@
 package no.novari.flyt.audit.authorization
 
-import org.springframework.beans.factory.annotation.Qualifier
 import org.springframework.core.ParameterizedTypeReference
 import org.springframework.web.client.RestClient
 import org.springframework.web.client.RestClientResponseException
@@ -8,7 +7,6 @@ import org.springframework.web.client.body
 import java.util.UUID
 
 class RestClientAuthorizationClient(
-    @Qualifier("authorizationRestClient")
     private val restClient: RestClient,
 ) : AuthorizationClient {
     override fun findByObjectIdentifier(oid: UUID): AuthorizedUserDto? =

@@ -21,8 +21,12 @@ class FlytAuditAuthorizationFailureAnalyzer : AbstractFailureAnalyzer<Unsatisfie
             """
             fint-flyt-audit-starter krever OAuth2 client credentials for å kalle
             fint-flyt-authorization-service (navn-oppslag for endringslogg), men
-            spring.security.oauth2.client.registration.${DEFAULT_REGISTRATION_ID}
+            spring.security.oauth2.client.registration.$DEFAULT_REGISTRATION_ID
             er ikke konfigurert eller spring-boot-starter-oauth2-client mangler.
+
+            Merk: '$DEFAULT_REGISTRATION_ID' er standard registrerings-ID. Bruker du
+            et annet navn, sett novari.flyt.audit.authorization.client-registration-id
+            til samme verdi i application.yaml.
             """.trimIndent(),
             """
             1. Legg til spring-boot-starter-oauth2-client som avhengighet i tjenesten.
