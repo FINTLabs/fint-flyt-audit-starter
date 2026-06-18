@@ -27,7 +27,7 @@ jobs:
         uses: gradle/actions/setup-gradle@v5
 
       - name: Publish Build
-        run: ./gradlew clean publish -Pversion=${{ env.RELEASE_VERSION }}
+        run: ./gradlew clean build publish -Pversion=${{ env.RELEASE_VERSION }}
         env:
           REPOSILITE_USERNAME: ${{ secrets.REPOSILITE_USERNAME }}
           REPOSILITE_PASSWORD: ${{ secrets.REPOSILITE_PASSWORD }}
