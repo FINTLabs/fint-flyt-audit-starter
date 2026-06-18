@@ -5,17 +5,20 @@ import jakarta.persistence.Column
 import jakarta.persistence.MappedSuperclass
 import no.novari.flyt.audit.actor.Actor
 import org.hibernate.annotations.Type
+import org.hibernate.envers.NotAudited
 import org.springframework.data.annotation.LastModifiedBy
 import org.springframework.data.annotation.LastModifiedDate
 import java.time.Instant
 
 @MappedSuperclass
 abstract class AuditedEntity : CreatedAuditedEntity() {
+    @NotAudited
     @LastModifiedDate
     @Column(name = "last_modified_at", nullable = false)
     lateinit var lastModifiedAt: Instant
         protected set
 
+    @NotAudited
     @LastModifiedBy
     @Type(JsonType::class)
     @Column(name = "last_modified_by", columnDefinition = "jsonb", nullable = false)
