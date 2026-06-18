@@ -1,5 +1,6 @@
 package no.novari.flyt.audit.authorization
 
+import org.springframework.boot.autoconfigure.condition.ConditionalOnBean
 import org.springframework.boot.autoconfigure.condition.ConditionalOnClass
 import org.springframework.context.annotation.Bean
 import org.springframework.context.annotation.Configuration
@@ -16,6 +17,7 @@ import org.springframework.web.client.RestClient
 @ConditionalOnClass(ClientRegistrationRepository::class)
 class AuthorizationRestClientConfiguration {
     @Bean
+    @ConditionalOnBean(ClientRegistrationRepository::class)
     fun authorizationAuthorizedClientManager(
         clientRegistrationRepository: ClientRegistrationRepository,
         authorizedClientService: OAuth2AuthorizedClientService,
@@ -36,6 +38,7 @@ class AuthorizationRestClientConfiguration {
     }
 
     @Bean("authorizationRestClient")
+    @ConditionalOnBean(OAuth2AuthorizedClientManager::class)
     fun authorizationRestClient(
         authorizationAuthorizedClientManager: OAuth2AuthorizedClientManager,
         clientHttpRequestFactory: ClientHttpRequestFactory,
@@ -51,10 +54,4 @@ class AuthorizationRestClientConfiguration {
             .baseUrl("${props.baseUrl}/api/intern-klient/authorization/users")
             .build()
     }
-
-    @Bean
-    fun authorizationClient(
-        @org.springframework.beans.factory.annotation.Qualifier("authorizationRestClient")
-        restClient: RestClient,
-    ): AuthorizationClient = RestClientAuthorizationClient(restClient)
 }

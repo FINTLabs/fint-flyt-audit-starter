@@ -53,6 +53,7 @@ dependencies {
     api("org.hibernate.orm:hibernate-envers")
     api("io.hypersistence:hypersistence-utils-hibernate-63:3.11.0")
     api("com.fasterxml.jackson.module:jackson-module-kotlin")
+    implementation("com.github.ben-manes.caffeine:caffeine")
 
     compileOnly("org.springframework.boot:spring-boot-starter-oauth2-resource-server")
     compileOnly("org.springframework.boot:spring-boot-starter-oauth2-client")

@@ -1,0 +1,51 @@
+package no.novari.flyt.audit.authorization
+
+import com.github.benmanes.caffeine.cache.Caffeine
+import java.util.Optional
+import java.util.UUID
+
+class CachingAuthorizationClient(
+    private val delegate: AuthorizationClient,
+    props: AuthorizationProperties.Cache,
+) : AuthorizationClient {
+    // Cacher UUID -> Optional<name>: empty Optional betyr at OID ikke finnes (eller har null-navn)
+    private val cache =
+        Caffeine
+            .newBuilder()
+            .maximumSize(props.maxSize)
+            .expireAfterWrite(props.ttl)
+            .build<UUID, Optional<String>>()
+
+    override fun findByObjectIdentifier(oid: UUID): AuthorizedUserDto? {
+        val cached = cache.getIfPresent(oid)
+        if (cached != null) return cached.map { AuthorizedUserDto(oid, it) }.orElse(null)
+        val result = delegate.findByObjectIdentifier(oid)
+        cache.put(oid, Optional.ofNullable(result?.name))
+        return result
+    }
+
+    override fun lookupUsers(oids: List<UUID>): List<AuthorizedUserDto> {
+        val distinct = oids.distinct()
+        val result = mutableListOf<AuthorizedUserDto>()
+        val missing = mutableListOf<UUID>()
+
+        for (oid in distinct) {
+            val hit = cache.getIfPresent(oid)
+            when {
+                hit == null -> missing.add(oid)
+                hit.isPresent -> result.add(AuthorizedUserDto(oid, hit.get()))
+            }
+        }
+
+        if (missing.isEmpty()) return result
+
+        val fetched = delegate.lookupUsers(missing)
+        val byOid = fetched.associateBy { it.objectIdentifier }
+        for (oid in missing) {
+            cache.put(oid, Optional.ofNullable(byOid[oid]?.name))
+            byOid[oid]?.let { result.add(it) }
+        }
+
+        return result
+    }
+}
