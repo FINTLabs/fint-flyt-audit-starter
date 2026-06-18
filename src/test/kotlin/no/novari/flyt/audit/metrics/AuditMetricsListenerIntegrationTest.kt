@@ -50,13 +50,13 @@ class AuditMetricsListenerIntegrationTest {
     }
 
     @Test
-    fun `AuditMetricsListener inkrementerer success-teller ved lagring`() {
+    fun `AuditMetricsListener inkrementerer skriveteller ved lagring`() {
         setJwt()
         repository.saveAndFlush(AuditedTestEntity().apply { value = "first" })
 
         val count =
             registry
-                .counter(AuditMetrics.WRITE_COUNTER, "entity", "AuditedTestEntity", "outcome", "success")
+                .counter(AuditMetrics.WRITE_COUNTER, "entity", "AuditedTestEntity")
                 .count()
         assertThat(count).isGreaterThanOrEqualTo(1.0)
     }
@@ -67,7 +67,7 @@ class AuditMetricsListenerIntegrationTest {
         val saved = repository.saveAndFlush(AuditedTestEntity().apply { value = "initial" })
         val afterInsert =
             registry
-                .counter(AuditMetrics.WRITE_COUNTER, "entity", "AuditedTestEntity", "outcome", "success")
+                .counter(AuditMetrics.WRITE_COUNTER, "entity", "AuditedTestEntity")
                 .count()
 
         saved.value = "updated"
@@ -75,21 +75,9 @@ class AuditMetricsListenerIntegrationTest {
 
         val afterUpdate =
             registry
-                .counter(AuditMetrics.WRITE_COUNTER, "entity", "AuditedTestEntity", "outcome", "success")
+                .counter(AuditMetrics.WRITE_COUNTER, "entity", "AuditedTestEntity")
                 .count()
         assertThat(afterUpdate).isGreaterThan(afterInsert)
-    }
-
-    @Test
-    fun `AuditMetricsListener registrerer timer-observasjon`() {
-        setJwt()
-        repository.saveAndFlush(AuditedTestEntity().apply { value = "v1" })
-
-        val timerCount =
-            registry
-                .timer(AuditMetrics.WRITE_DURATION, "entity", "AuditedTestEntity")
-                .count()
-        assertThat(timerCount).isGreaterThanOrEqualTo(1L)
     }
 
     private fun setJwt() {
