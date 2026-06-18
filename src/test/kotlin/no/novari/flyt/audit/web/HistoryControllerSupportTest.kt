@@ -19,6 +19,7 @@ import org.springframework.context.annotation.Bean
 import org.springframework.context.annotation.Import
 import org.springframework.data.domain.Page
 import org.springframework.data.domain.PageImpl
+import org.springframework.data.domain.PageRequest
 import org.springframework.data.domain.Pageable
 import org.springframework.test.web.servlet.MockMvc
 import org.springframework.test.web.servlet.get
@@ -88,6 +89,8 @@ class HistoryControllerSupportTest {
                         snapshot = RevisedTestEntity().apply { name = "v2" },
                     ),
                 ),
+                PageRequest.of(0, 20),
+                1L,
             )
 
         mockMvc
@@ -99,6 +102,10 @@ class HistoryControllerSupportTest {
                 jsonPath("$.content[0].actor.type") { value("USER") }
                 jsonPath("$.content[0].actor.oid") { value(oid.toString()) }
                 jsonPath("$.content[0].snapshot.name") { value("v2") }
+                jsonPath("$.totalElements") { value(1) }
+                jsonPath("$.totalPages") { value(1) }
+                jsonPath("$.page") { value(0) }
+                jsonPath("$.size") { value(20) }
             }
 
         assertThat(fakeHistoryService.lastId).isEqualTo(42L)

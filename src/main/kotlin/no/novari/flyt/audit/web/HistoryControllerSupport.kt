@@ -1,9 +1,7 @@
 package no.novari.flyt.audit.web
 
 import no.novari.flyt.audit.history.EnversHistoryService
-import no.novari.flyt.audit.history.HistoryEntryDto
 import no.novari.flyt.audit.history.HistoryFilter
-import org.springframework.data.domain.Page
 import org.springframework.data.domain.Pageable
 import org.springframework.data.domain.Sort
 import org.springframework.data.web.PageableDefault
@@ -34,5 +32,5 @@ abstract class HistoryControllerSupport<T : Any, ID : Any>(
         @PageableDefault(size = 20, sort = ["timestamp"], direction = Sort.Direction.DESC)
         pageable: Pageable,
         filter: HistoryFilter,
-    ): Page<HistoryEntryDto<T>> = historyService.findHistory(id, pageable, filter)
+    ): HistoryPageDto<T> = HistoryPageDto.from(historyService.findHistory(id, pageable, filter))
 }
