@@ -29,7 +29,7 @@ abstract class EnversHistoryService<T : Any, ID : Any>(
     private val entityManager: EntityManager,
     private val enrichmentService: ActorEnrichmentService,
 ) {
-    fun findHistory(
+    open fun findHistory(
         id: ID,
         pageable: Pageable,
         filter: HistoryFilter = HistoryFilter(),
