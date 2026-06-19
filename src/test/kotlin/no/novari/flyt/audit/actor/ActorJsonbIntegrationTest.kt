@@ -80,7 +80,6 @@ class ActorJsonbIntegrationTest {
                 .setParameter("id", id)
                 .singleResult as String
 
-        // Postgres jsonb normaliserer key-rekkefølge; sammenlign strukturelt.
         assertThat(mapper.readTree(actualJson)).isEqualTo(mapper.readTree(expectedJson))
     }
 
