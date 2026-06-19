@@ -11,7 +11,7 @@ Starteren leverer aktør-modell, `@MappedSuperclass`-hierarki, Hibernate Envers-
 - [`AuditedEntity`](src/main/kotlin/no/novari/flyt/audit/entity/AuditedEntity.kt) — utvider `CreatedAuditedEntity` med `lastModifiedAt` og `lastModifiedBy` (Variant C/D/E).
 - [`ActorRevisionEntity`](src/main/kotlin/no/novari/flyt/audit/revision/ActorRevisionEntity.kt) — Envers `@RevisionEntity` med JSONB `actor`-kolonne.
 - [`AuthorizationClient`](src/main/kotlin/no/novari/flyt/audit/authorization/AuthorizationClient.kt) — klient mot `fint-flyt-authorization-service` for navn-oppslag ved presentasjons-tid.
-- Flyway-migrasjonsmaler under [`src/main/resources/db/migration/flyt-audit/`](src/main/resources/db/migration/flyt-audit/).
+- Flyway-migrasjonsmaler under [`src/main/resources/flyt-audit-templates/`](src/main/resources/flyt-audit-templates/) (bevisst utenfor `db/migration/` for å unngå auto-oppdagelse hos konsumenter — se under).
 
 ## Avhengighet
 
@@ -57,7 +57,9 @@ class MyEntity : AuditedEntity() {
 
 ### 3. Flyway-migrasjoner
 
-Starteren leverer [`V1__revinfo.sql`](src/main/resources/db/migration/flyt-audit/V1__revinfo.sql) (Envers `revinfo`-tabell og sekvens). Kopier den til tjenestens `src/main/resources/db/migration/` og juster versjonsnummeret slik at det passer inn i tjenestens migrasjonsrekke.
+Starteren leverer [`V1__revinfo.sql`](src/main/resources/flyt-audit-templates/V1__revinfo.sql) (Envers `revinfo`-tabell og sekvens) **kun for Variant D/E** (Envers-historikk). Den ligger bevisst under `flyt-audit-templates/` og **ikke** under `db/migration/`, slik at Flyway hos konsumenten ikke auto-oppdager den (det ville kollidert med tjenestens egen `V1`). Kopier den til tjenestens `src/main/resources/db/migration/` og juster versjonsnummeret slik at det passer inn i tjenestens migrasjonsrekke.
+
+Variant B/C trenger ikke `revinfo` i det hele tatt — kun audit-kolonnene på entitetstabellen (se under).
 
 For entitetens audit-felt og `_aud`-tabellen skriver tjenesten selv migrasjonene.
 

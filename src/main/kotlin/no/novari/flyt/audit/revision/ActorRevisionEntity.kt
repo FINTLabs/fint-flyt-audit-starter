@@ -17,7 +17,7 @@ import org.hibernate.envers.RevisionTimestamp
 /**
  * Envers-revisjonsentitet lagret i `revinfo`-tabellen for hver transaksjon som endrer auditerte entiteter.
  *
- * Konsumenten eier Flyway-DDL for `revinfo` — se `db/migration/flyt-audit/V1__revinfo.sql`.
+ * Konsumenten eier Flyway-DDL for `revinfo` — se malen `flyt-audit-templates/V1__revinfo.sql`.
  * Feltet [actor] inneholder aktøren som utløste endringen (JSONB) og populeres av [ActorRevisionListener].
  */
 @Entity
