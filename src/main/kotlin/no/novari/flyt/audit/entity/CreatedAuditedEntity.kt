@@ -19,9 +19,13 @@ import java.time.Instant
  *
  * Konsumenten eier Flyway-DDL og må inkludere disse kolonnene i sin migrering:
  * ```sql
- * created_at  TIMESTAMP WITH TIME ZONE NOT NULL,
- * created_by  JSONB                    NOT NULL
+ * created_at  TIMESTAMP WITH TIME ZONE NULL,
+ * created_by  JSONB                    NOT NULL DEFAULT '{"type":"UNKNOWN"}'::jsonb
  * ```
+ * `created_at` er nullable slik at retrofit av eksisterende tabeller kan bruke `NULL` for
+ * migrerte rader i stedet for et forfalsket tidsstempel. Spring Data setter feltet automatisk
+ * ved første insert på nye rader.
+ *
  * `@Audited`-entiteter som arver denne klassen trenger ikke speile kolonnene i `_aud`-tabellen
  * — de er ekskludert fra Envers via `@NotAudited`.
  */
@@ -30,8 +34,8 @@ import java.time.Instant
 abstract class CreatedAuditedEntity {
     @NotAudited
     @CreatedDate
-    @Column(name = "created_at", nullable = false, updatable = false)
-    lateinit var createdAt: Instant
+    @Column(name = "created_at", nullable = true, updatable = false)
+    var createdAt: Instant? = null
         protected set
 
     @NotAudited

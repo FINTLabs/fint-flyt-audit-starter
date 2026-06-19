@@ -16,17 +16,18 @@ import java.time.Instant
  *
  * Konsumenten eier Flyway-DDL og må i tillegg til [CreatedAuditedEntity]-kolonnene inkludere:
  * ```sql
- * last_modified_at  TIMESTAMP WITH TIME ZONE NOT NULL,
- * last_modified_by  JSONB                    NOT NULL
+ * last_modified_at  TIMESTAMP WITH TIME ZONE NULL,
+ * last_modified_by  JSONB                    NOT NULL DEFAULT '{"type":"UNKNOWN"}'::jsonb
  * ```
+ * `last_modified_at` er nullable av samme grunn som `created_at` — se [CreatedAuditedEntity].
  * Feltene er ekskludert fra Envers `_aud`-tabeller via `@NotAudited`.
  */
 @MappedSuperclass
 abstract class AuditedEntity : CreatedAuditedEntity() {
     @NotAudited
     @LastModifiedDate
-    @Column(name = "last_modified_at", nullable = false)
-    lateinit var lastModifiedAt: Instant
+    @Column(name = "last_modified_at", nullable = true)
+    var lastModifiedAt: Instant? = null
         protected set
 
     @NotAudited

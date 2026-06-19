@@ -61,14 +61,37 @@ Starteren leverer [`V1__revinfo.sql`](src/main/resources/db/migration/flyt-audit
 
 For entitetens audit-felt og `_aud`-tabellen skriver tjenesten selv migrasjonene.
 
-**Eksempel — audit-felt på entitetstabellen (Variant C/D/E):**
+**Eksempel — audit-felt på ny tabell (Variant C/D/E):**
 
 ```sql
 ALTER TABLE my_entity
-    ADD COLUMN created_at       TIMESTAMPTZ NOT NULL DEFAULT now(),
-    ADD COLUMN created_by       JSONB       NOT NULL DEFAULT '{"type":"UNKNOWN"}'::jsonb,
-    ADD COLUMN last_modified_at TIMESTAMPTZ NOT NULL DEFAULT now(),
-    ADD COLUMN last_modified_by JSONB       NOT NULL DEFAULT '{"type":"UNKNOWN"}'::jsonb;
+    ADD COLUMN created_at       TIMESTAMPTZ NULL,
+    ADD COLUMN created_by       JSONB NOT NULL DEFAULT '{"type":"UNKNOWN"}'::jsonb,
+    ADD COLUMN last_modified_at TIMESTAMPTZ NULL,
+    ADD COLUMN last_modified_by JSONB NOT NULL DEFAULT '{"type":"UNKNOWN"}'::jsonb;
+```
+
+`*_at`-kolonnene er nullable — Spring Data setter dem automatisk ved første insert på nye rader.
+
+**Retrofit av eksisterende tabell:** Hvis tabellen allerede har et `created_at`-felt med et annet navn eller type, bør verdiene kopieres over fremfor å settes til `now()`, da det er mer korrekt å la feltet stå `NULL` for rader som ble til før audit ble innført. For `TIMESTAMP → TIMESTAMPTZ`-konvertering er in-place-endring trygt:
+
+```sql
+ALTER TABLE my_entity
+    ALTER COLUMN created_at TYPE TIMESTAMPTZ USING created_at AT TIME ZONE 'UTC';
+```
+
+For `*_by`-kolonner som allerede inneholder strenger (navn, e-post, OID): er verdien en UUID kan den konverteres til `Actor.User`-format; ellers settes den til `SYSTEM` eller `UNKNOWN`:
+
+```sql
+ALTER TABLE my_entity
+    ALTER COLUMN created_by TYPE JSONB
+    USING CASE
+        WHEN created_by ~ '^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$'
+            THEN jsonb_build_object('type', 'USER', 'oid', created_by)
+        WHEN lower(created_by) IN ('system', '')
+            THEN '{"type":"SYSTEM"}'::jsonb
+        ELSE '{"type":"UNKNOWN"}'::jsonb
+    END;
 ```
 
 **Eksempel — `_aud`-tabell (Variant D/E):**
