@@ -87,7 +87,7 @@ class AuditMetricsListenerIntegrationTest {
                 Instant.now(),
                 Instant.now().plusSeconds(3600),
                 mapOf("alg" to "RS256"),
-                mapOf("oid" to UUID.randomUUID().toString()),
+                mapOf("objectidentifier" to UUID.randomUUID().toString()),
             )
         SecurityContextHolder.getContext().authentication = TestingAuthenticationToken(jwt, null)
     }

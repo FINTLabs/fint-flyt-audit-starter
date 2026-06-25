@@ -58,7 +58,7 @@ class CreatedAuditedEntityIntegrationTest {
                 Instant.now(),
                 Instant.now().plusSeconds(3600),
                 mapOf("alg" to "RS256"),
-                mapOf("oid" to oid.toString()),
+                mapOf("objectidentifier" to oid.toString()),
             )
         SecurityContextHolder.getContext().authentication = TestingAuthenticationToken(jwt, null)
     }

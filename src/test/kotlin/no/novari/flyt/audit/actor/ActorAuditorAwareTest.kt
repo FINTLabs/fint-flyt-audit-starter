@@ -25,30 +25,38 @@ class ActorAuditorAwareTest {
     }
 
     @Test
-    fun `JWT med oid gir Actor-User med riktig UUID`() {
+    fun `JWT med objectidentifier gir Actor-User med riktig UUID`() {
         val oid = UUID.randomUUID()
-        setJwtAuthentication(mapOf("oid" to oid.toString()))
+        setJwtAuthentication(claims = mapOf("objectidentifier" to oid.toString()))
 
         assertThat(auditorAware.currentAuditor).contains(Actor.User(oid))
     }
 
     @Test
-    fun `JWT med ugyldig oid gir Actor-Unknown`() {
-        setJwtAuthentication(mapOf("oid" to "ikke-en-uuid"))
+    fun `JWT med ugyldig objectidentifier gir Actor-Unknown`() {
+        setJwtAuthentication(claims = mapOf("objectidentifier" to "ikke-en-uuid"))
 
         assertThat(auditorAware.currentAuditor).contains(Actor.Unknown)
     }
 
     @Test
-    fun `JWT uten oid men med azp gir Actor-M2M`() {
-        setJwtAuthentication(mapOf("azp" to "min-klient-id"))
+    fun `JWT uten objectidentifier men med sub gir Actor-M2M`() {
+        setJwtAuthentication(claims = mapOf("sub" to "min-klient-id"))
 
         assertThat(auditorAware.currentAuditor).contains(Actor.M2M("min-klient-id"))
     }
 
     @Test
-    fun `JWT uten oid og azp gir Actor-Unknown`() {
-        setJwtAuthentication(mapOf("sub" to "noen"))
+    fun `JWT med både objectidentifier og sub gir Actor-User (objectidentifier vinner)`() {
+        val oid = UUID.randomUUID()
+        setJwtAuthentication(claims = mapOf("objectidentifier" to oid.toString(), "sub" to "noen-klient"))
+
+        assertThat(auditorAware.currentAuditor).contains(Actor.User(oid))
+    }
+
+    @Test
+    fun `JWT uten objectidentifier og uten sub gir Actor-Unknown`() {
+        setJwtAuthentication(claims = mapOf("iss" to "test-issuer"))
 
         assertThat(auditorAware.currentAuditor).contains(Actor.Unknown)
     }
