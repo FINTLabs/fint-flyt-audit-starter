@@ -1,1 +1,2 @@
 no.novari.flyt.audit.config.FlytAuditAutoConfiguration
+no.novari.flyt.audit.config.FlytAuditJpaAuditingAutoConfiguration
