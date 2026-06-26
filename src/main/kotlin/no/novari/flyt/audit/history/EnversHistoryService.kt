@@ -84,6 +84,60 @@ abstract class EnversHistoryService<T : Any, ID : Any>(
         return PageImpl(content, pageable, countRevisions(id, filter))
     }
 
+    open fun findAllHistory(
+        pageable: Pageable,
+        filter: HistoryFilter = HistoryFilter(),
+    ): Page<EntityHistoryEntryDto<T, ID>> {
+        val reader = AuditReaderFactory.get(entityManager)
+
+        val query =
+            reader
+                .createQuery()
+                .forRevisionsOfEntity(entityClass, false, true)
+
+        filter.from?.let {
+            query.add(AuditEntity.revisionProperty("revtstmp").ge(it.toEpochMilli()))
+        }
+        filter.to?.let {
+            query.add(AuditEntity.revisionProperty("revtstmp").lt(it.toEpochMilli()))
+        }
+
+        query
+            .addOrder(AuditEntity.revisionNumber().desc())
+            .setFirstResult(pageable.offset.toInt())
+            .setMaxResults(pageable.pageSize)
+
+        @Suppress("UNCHECKED_CAST")
+        val rows = query.resultList as List<Array<Any?>>
+
+        val actors = rows.map { (it[1] as ActorRevisionEntity).actor }
+        val nameByOid = enrichmentService.enrich(actors)
+
+        val content =
+            rows.map { row ->
+                val revision = row[1] as ActorRevisionEntity
+                val revisionType = row[2] as RevisionType
+                val display = (revision.actor as? Actor.User)?.oid?.let { nameByOid[it] }
+
+                @Suppress("UNCHECKED_CAST")
+                val entityId = entityManager.entityManagerFactory.persistenceUnitUtil.getIdentifier(row[0]) as ID
+
+                @Suppress("UNCHECKED_CAST")
+                val snapshot = if (revisionType == RevisionType.DEL) null else row[0] as T?
+
+                EntityHistoryEntryDto(
+                    entityId = entityId,
+                    timestamp = Instant.ofEpochMilli(revision.revtstmp),
+                    type = HistoryEventType.from(revisionType),
+                    actor = revision.actor,
+                    actorDisplay = display,
+                    snapshot = snapshot,
+                )
+            }
+
+        return PageImpl(content, pageable, countAllRevisions(filter))
+    }
+
     private fun countRevisions(
         id: ID,
         filter: HistoryFilter,
@@ -95,6 +149,25 @@ abstract class EnversHistoryService<T : Any, ID : Any>(
                 .createQuery()
                 .forRevisionsOfEntity(entityClass, false, true)
                 .add(AuditEntity.id().eq(id))
+                .addProjection(AuditEntity.revisionNumber().count())
+
+        filter.from?.let {
+            query.add(AuditEntity.revisionProperty("revtstmp").ge(it.toEpochMilli()))
+        }
+        filter.to?.let {
+            query.add(AuditEntity.revisionProperty("revtstmp").lt(it.toEpochMilli()))
+        }
+
+        return query.singleResult as Long
+    }
+
+    private fun countAllRevisions(filter: HistoryFilter): Long {
+        val reader = AuditReaderFactory.get(entityManager)
+
+        val query =
+            reader
+                .createQuery()
+                .forRevisionsOfEntity(entityClass, false, true)
                 .addProjection(AuditEntity.revisionNumber().count())
 
         filter.from?.let {

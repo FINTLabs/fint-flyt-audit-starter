@@ -160,12 +160,96 @@ class EnversHistoryServiceIntegrationTest {
         assertThat(page.content).isEmpty()
     }
 
+    @Test
+    fun `findAllHistory returnerer historikk for alle entiteter med entityId`() {
+        setJwtWithOid(userOid)
+        val a = entityRepository.saveAndFlush(RevisedTestEntity().apply { name = "a" })
+        val b = entityRepository.saveAndFlush(RevisedTestEntity().apply { name = "b" })
+
+        val page = findAllHistory(PageRequest.of(0, 20))
+
+        assertThat(page.totalElements).isEqualTo(2)
+        assertThat(page.content.map { it.entityId }).containsExactlyInAnyOrder(a.id, b.id)
+    }
+
+    @Test
+    fun `findAllHistory sorterer nyeste revisjon først på tvers av entiteter`() {
+        setJwtWithOid(userOid)
+        val a = entityRepository.saveAndFlush(RevisedTestEntity().apply { name = "a1" })
+        a.name = "a2"
+        entityRepository.saveAndFlush(a)
+        val b = entityRepository.saveAndFlush(RevisedTestEntity().apply { name = "b1" })
+
+        val page = findAllHistory(PageRequest.of(0, 20))
+
+        val snapshot = page.content.first().snapshot
+        assertThat(snapshot?.name).isEqualTo("b1")
+    }
+
+    @Test
+    fun `findAllHistory DEL-entry har entityId satt og snapshot null`() {
+        setJwtWithOid(userOid)
+        val saved = entityRepository.saveAndFlush(RevisedTestEntity().apply { name = "v1" })
+        val id = saved.id!!
+        entityRepository.delete(saved)
+        entityRepository.flush()
+
+        val page = findAllHistory(PageRequest.of(0, 20))
+
+        val deleted = page.content.first { it.type == HistoryEventType.DELETED }
+        assertThat(deleted.entityId).isEqualTo(id)
+        assertThat(deleted.snapshot).isNull()
+    }
+
+    @Test
+    fun `findAllHistory paginering avgrenser innhold men teller totalt`() {
+        setJwtWithOid(userOid)
+        repeat(3) { i ->
+            entityRepository.saveAndFlush(RevisedTestEntity().apply { name = "e$i" })
+        }
+
+        val page = findAllHistory(PageRequest.of(0, 2))
+
+        assertThat(page.totalElements).isEqualTo(3)
+        assertThat(page.content).hasSize(2)
+    }
+
+    @Test
+    fun `findAllHistory from-filter ekskluderer eldre revisjoner`() {
+        setJwtWithOid(userOid)
+        entityRepository.saveAndFlush(RevisedTestEntity().apply { name = "v1" })
+
+        val future = Instant.now().plusSeconds(3600)
+        val page = findAllHistory(PageRequest.of(0, 20), HistoryFilter(from = future))
+
+        assertThat(page.totalElements).isZero()
+        assertThat(page.content).isEmpty()
+    }
+
+    @Test
+    fun `findAllHistory hydrerer actorDisplay for bruker-aktør`() {
+        setJwtWithOid(userOid)
+        entityRepository.saveAndFlush(RevisedTestEntity().apply { name = "v1" })
+
+        val page = findAllHistory(PageRequest.of(0, 20))
+
+        assertThat(page.content.single().actorDisplay).isEqualTo("Ola Nordmann")
+        assertThat(page.content.single().actor).isEqualTo(Actor.User(userOid))
+    }
+
     private fun findHistory(
         id: Long,
         pageable: PageRequest,
         filter: HistoryFilter = HistoryFilter(),
     ) = transactionTemplate.execute {
         historyService.findHistory(id, pageable, filter)
+    }!!
+
+    private fun findAllHistory(
+        pageable: PageRequest,
+        filter: HistoryFilter = HistoryFilter(),
+    ) = transactionTemplate.execute {
+        historyService.findAllHistory(pageable, filter)
     }!!
 
     private fun setJwtWithOid(oid: UUID) {
