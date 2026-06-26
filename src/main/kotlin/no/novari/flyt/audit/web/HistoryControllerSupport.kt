@@ -38,4 +38,11 @@ abstract class HistoryControllerSupport<T : Any, ID : Any>(
         pageable: Pageable,
         filter: HistoryFilter,
     ): HistoryPageDto<T> = HistoryPageDto.from(historyService.findHistory(id, pageable, filter))
+
+    @GetMapping("/history")
+    fun allHistory(
+        @PageableDefault(size = 20)
+        pageable: Pageable,
+        filter: HistoryFilter,
+    ): EntityHistoryPageDto<T, ID> = EntityHistoryPageDto.from(historyService.findAllHistory(pageable, filter))
 }

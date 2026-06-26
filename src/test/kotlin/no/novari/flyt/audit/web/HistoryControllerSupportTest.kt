@@ -4,6 +4,7 @@ import jakarta.persistence.EntityManager
 import no.novari.flyt.audit.actor.Actor
 import no.novari.flyt.audit.authorization.AuthorizationClient
 import no.novari.flyt.audit.history.ActorEnrichmentService
+import no.novari.flyt.audit.history.EntityHistoryEntryDto
 import no.novari.flyt.audit.history.EnversHistoryService
 import no.novari.flyt.audit.history.HistoryEntryDto
 import no.novari.flyt.audit.history.HistoryEventType
@@ -40,6 +41,7 @@ class HistoryControllerSupportTest {
 
     class FakeHistoryService(
         var canned: Page<HistoryEntryDto<RevisedTestEntity>> = PageImpl(emptyList()),
+        var cannedAll: Page<EntityHistoryEntryDto<RevisedTestEntity, Long>> = PageImpl(emptyList()),
     ) : EnversHistoryService<RevisedTestEntity, Long>(
             RevisedTestEntity::class.java,
             mock(EntityManager::class.java),
@@ -48,6 +50,8 @@ class HistoryControllerSupportTest {
         var lastId: Long? = null
         var lastPageable: Pageable? = null
         var lastFilter: HistoryFilter? = null
+        var lastAllPageable: Pageable? = null
+        var lastAllFilter: HistoryFilter? = null
 
         override fun findHistory(
             id: Long,
@@ -58,6 +62,15 @@ class HistoryControllerSupportTest {
             lastPageable = pageable
             lastFilter = filter
             return canned
+        }
+
+        override fun findAllHistory(
+            pageable: Pageable,
+            filter: HistoryFilter,
+        ): Page<EntityHistoryEntryDto<RevisedTestEntity, Long>> {
+            lastAllPageable = pageable
+            lastAllFilter = filter
+            return cannedAll
         }
     }
 
@@ -140,5 +153,65 @@ class HistoryControllerSupportTest {
         val filter = fakeHistoryService.lastFilter!!
         assertThat(filter.from).isNull()
         assertThat(filter.to).isNull()
+    }
+
+    @Test
+    fun `allHistory-endepunkt delegerer til findAllHistory og inkluderer entityId i respons`() {
+        val oid = UUID.randomUUID()
+        fakeHistoryService.cannedAll =
+            PageImpl(
+                listOf(
+                    EntityHistoryEntryDto(
+                        entityId = 7L,
+                        timestamp = Instant.parse("2026-06-17T10:00:00Z"),
+                        type = HistoryEventType.CREATED,
+                        actor = Actor.User(oid),
+                        actorDisplay = "Ola Nordmann",
+                        snapshot = RevisedTestEntity().apply { name = "v1" },
+                    ),
+                ),
+                PageRequest.of(0, 20),
+                1L,
+            )
+
+        mockMvc
+            .get("/test-entities/history")
+            .andExpect {
+                status { isOk() }
+                jsonPath("$.content[0].entityId") { value(7) }
+                jsonPath("$.content[0].type") { value("CREATED") }
+                jsonPath("$.content[0].actorDisplay") { value("Ola Nordmann") }
+                jsonPath("$.content[0].actor.type") { value("USER") }
+                jsonPath("$.content[0].actor.oid") { value(oid.toString()) }
+                jsonPath("$.content[0].snapshot.name") { value("v1") }
+                jsonPath("$.totalElements") { value(1) }
+                jsonPath("$.totalPages") { value(1) }
+                jsonPath("$.page") { value(0) }
+                jsonPath("$.size") { value(20) }
+            }
+
+        assertThat(fakeHistoryService.lastId).isNull()
+    }
+
+    @Test
+    fun `allHistory pageable-default settes når ingen parametere er gitt`() {
+        mockMvc.get("/test-entities/history").andExpect { status { isOk() } }
+
+        val pageable = fakeHistoryService.lastAllPageable!!
+        assertThat(pageable.pageSize).isEqualTo(20)
+        assertThat(pageable.pageNumber).isZero()
+    }
+
+    @Test
+    fun `allHistory from- og to-parametere bindes til filteret`() {
+        mockMvc
+            .get("/test-entities/history") {
+                param("from", "2026-06-01T00:00:00Z")
+                param("to", "2026-06-30T00:00:00Z")
+            }.andExpect { status { isOk() } }
+
+        val filter = fakeHistoryService.lastAllFilter!!
+        assertThat(filter.from).isEqualTo(Instant.parse("2026-06-01T00:00:00Z"))
+        assertThat(filter.to).isEqualTo(Instant.parse("2026-06-30T00:00:00Z"))
     }
 }
