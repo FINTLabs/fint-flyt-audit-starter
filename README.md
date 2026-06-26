@@ -21,7 +21,7 @@ dependencies {
 }
 ```
 
-Publiseres til `https://repo.fintlabs.no/releases`. Krever JDK 25.
+Publiseres til `https://repo.fintlabs.no/releases`. Krever JDK 25 eller nyere.
 
 ## Kom i gang
 
