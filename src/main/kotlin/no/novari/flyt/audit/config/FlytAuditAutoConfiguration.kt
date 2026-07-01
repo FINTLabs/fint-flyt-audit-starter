@@ -3,12 +3,16 @@ package no.novari.flyt.audit.config
 import io.micrometer.core.instrument.MeterRegistry
 import no.novari.flyt.audit.actor.Actor
 import no.novari.flyt.audit.actor.ActorAuditorAware
+import no.novari.flyt.audit.actor.ActorDisplayProperties
+import no.novari.flyt.audit.actor.ActorDisplayResolver
+import no.novari.flyt.audit.actor.ActorEnrichmentService
+import no.novari.flyt.audit.actor.ActorNameLookup
+import no.novari.flyt.audit.actor.HttpActorNameLookup
 import no.novari.flyt.audit.authorization.AuthorizationClient
 import no.novari.flyt.audit.authorization.AuthorizationProperties
 import no.novari.flyt.audit.authorization.AuthorizationRestClientConfiguration
 import no.novari.flyt.audit.authorization.CachingAuthorizationClient
 import no.novari.flyt.audit.authorization.RestClientAuthorizationClient
-import no.novari.flyt.audit.history.ActorEnrichmentService
 import no.novari.flyt.audit.metrics.AuditMetrics
 import org.springframework.beans.factory.annotation.Qualifier
 import org.springframework.boot.autoconfigure.AutoConfiguration
@@ -24,7 +28,7 @@ import org.springframework.web.client.RestClient
 
 @AutoConfiguration
 @ConditionalOnClass(AuditingEntityListener::class)
-@EnableConfigurationProperties(AuthorizationProperties::class)
+@EnableConfigurationProperties(AuthorizationProperties::class, ActorDisplayProperties::class)
 @Import(AuthorizationRestClientConfiguration::class)
 class FlytAuditAutoConfiguration {
     // JPA Auditing er flyttet til FlytAuditJpaAuditingAutoConfiguration — den må kjøres
@@ -52,8 +56,21 @@ class FlytAuditAutoConfiguration {
 
     @Bean
     @ConditionalOnBean(AuthorizationClient::class)
+    @ConditionalOnMissingBean(ActorNameLookup::class)
+    fun httpActorNameLookup(client: AuthorizationClient): ActorNameLookup = HttpActorNameLookup(client)
+
+    @Bean
+    @ConditionalOnBean(ActorNameLookup::class)
     @ConditionalOnMissingBean
-    fun actorEnrichmentService(client: AuthorizationClient) = ActorEnrichmentService(client)
+    fun actorEnrichmentService(lookup: ActorNameLookup) = ActorEnrichmentService(lookup)
+
+    @Bean
+    @ConditionalOnBean(ActorNameLookup::class)
+    @ConditionalOnMissingBean
+    fun actorDisplayResolver(
+        lookup: ActorNameLookup,
+        properties: ActorDisplayProperties,
+    ) = ActorDisplayResolver(lookup, properties)
 
     @Bean
     @ConditionalOnBean(MeterRegistry::class)

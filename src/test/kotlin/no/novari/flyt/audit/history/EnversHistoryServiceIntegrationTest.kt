@@ -2,6 +2,8 @@ package no.novari.flyt.audit.history
 
 import jakarta.persistence.EntityManager
 import no.novari.flyt.audit.actor.Actor
+import no.novari.flyt.audit.actor.ActorEnrichmentService
+import no.novari.flyt.audit.actor.HttpActorNameLookup
 import no.novari.flyt.audit.authorization.AuthorizationClient
 import no.novari.flyt.audit.authorization.AuthorizedUserDto
 import no.novari.flyt.audit.config.ApplicationContextHolder
@@ -72,7 +74,7 @@ class EnversHistoryServiceIntegrationTest {
             object : EnversHistoryService<RevisedTestEntity, Long>(
                 RevisedTestEntity::class.java,
                 entityManager,
-                ActorEnrichmentService(fakeClient),
+                ActorEnrichmentService(HttpActorNameLookup(fakeClient)),
             ) {}
     }
 

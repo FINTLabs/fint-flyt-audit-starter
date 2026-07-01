@@ -1,7 +1,5 @@
-package no.novari.flyt.audit.history
+package no.novari.flyt.audit.actor
 
-import no.novari.flyt.audit.actor.Actor
-import no.novari.flyt.audit.authorization.AuthorizationClient
 import org.slf4j.LoggerFactory
 import java.util.UUID
 
@@ -9,14 +7,15 @@ import java.util.UUID
  * Hydrerer visningsnavn for aktører ved presentasjons-tid.
  *
  * Kun [Actor.User] har navn å hente — navnet ligger ikke i endringsloggen,
- * men hentes fra `fint-flyt-authorization-service` (se løsningsanalysen §3.6.5).
+ * men hentes via [ActorNameLookup] (default: `fint-flyt-authorization-service`
+ * over HTTP; kan overstyres per tjeneste — se README).
  * Alle oid-er slås opp i ett batch-kall for å unngå N+1 fra historikk-API.
  *
- * Oppslaget er failsafe: feiler auth-service, returneres en tom map slik at
+ * Oppslaget er failsafe: feiler lookup, returneres en tom map slik at
  * historikk-API-et fortsatt svarer (uten navn) i stedet for å feile.
  */
 class ActorEnrichmentService(
-    private val client: AuthorizationClient,
+    private val lookup: ActorNameLookup,
 ) {
     fun enrich(actors: Collection<Actor>): Map<UUID, String?> {
         val oids =
@@ -27,11 +26,9 @@ class ActorEnrichmentService(
         if (oids.isEmpty()) return emptyMap()
 
         return try {
-            client
-                .lookupUsers(oids)
-                .associate { it.objectIdentifier to it.name }
+            lookup.lookupNames(oids)
         } catch (ex: Exception) {
-            logger.warn("Klarte ikke hydrere {} aktør(er) fra auth-service", oids.size, ex)
+            logger.warn("Klarte ikke hydrere {} aktør(er) — returnerer tom map", oids.size, ex)
             emptyMap()
         }
     }

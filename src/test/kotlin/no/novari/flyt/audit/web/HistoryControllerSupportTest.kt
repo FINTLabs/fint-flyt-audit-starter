@@ -2,8 +2,8 @@ package no.novari.flyt.audit.web
 
 import jakarta.persistence.EntityManager
 import no.novari.flyt.audit.actor.Actor
-import no.novari.flyt.audit.authorization.AuthorizationClient
-import no.novari.flyt.audit.history.ActorEnrichmentService
+import no.novari.flyt.audit.actor.ActorEnrichmentService
+import no.novari.flyt.audit.actor.ActorNameLookup
 import no.novari.flyt.audit.history.EntityHistoryEntryDto
 import no.novari.flyt.audit.history.EnversHistoryService
 import no.novari.flyt.audit.history.HistoryEntryDto
@@ -45,7 +45,7 @@ class HistoryControllerSupportTest {
     ) : EnversHistoryService<RevisedTestEntity, Long>(
             RevisedTestEntity::class.java,
             mock(EntityManager::class.java),
-            ActorEnrichmentService(mock(AuthorizationClient::class.java)),
+            ActorEnrichmentService(mock(ActorNameLookup::class.java)),
         ) {
         var lastId: Long? = null
         var lastPageable: Pageable? = null

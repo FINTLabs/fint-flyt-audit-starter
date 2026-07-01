@@ -114,6 +114,93 @@ Legg til `spring.jpa.hibernate.ddl-auto: validate` i produksjonskonfigurasjon.
 
 > **Tilgangskontroll:** starteren legger ingen autentisering eller autorisasjon på historikk-endepunktet. Konsumenten er ansvarlig for å sikre det — typisk ved å montere kontrolleren under et internt path-prefix som er autentisert i NAM (f.eks. `no.novari.flyt.webresourceserver.UrlPaths.INTERNAL_API`), eller via Spring Security-konfigurasjon.
 
+## Hydrering av `createdBy` / `lastModifiedBy` i REST-DTOer
+
+Entiteten lagrer `createdBy` som strukturert [`Actor`](src/main/kotlin/no/novari/flyt/audit/actor/Actor.kt) (JSONB). I REST-responsen ønsker web-klienten typisk navnet på personen — ikke `{"type":"USER","oid":"..."}`. Anbefalt kontrakt mot web er derfor et sidecar-mønster:
+
+```json
+{
+  "createdAt": "2026-06-17T10:00:00Z",
+  "createdBy": "Ola Nordmann",
+  "createdByActor": { "type": "USER", "oid": "8f2c..." },
+  "lastModifiedAt": "2026-06-18T12:34:00Z",
+  "lastModifiedBy": "System",
+  "lastModifiedByActor": { "type": "SYSTEM" }
+}
+```
+
+`createdBy: String?` er hydrert visningsnavn (samme kontrakt som eldre tjenester som eksponerte navn som streng). `createdByActor: Actor?` er den strukturerte utvidelsen for klienter som trenger å filtrere på `oid`.
+
+### `ActorDisplayResolver`
+
+Starteren registrerer en [`ActorDisplayResolver`](src/main/kotlin/no/novari/flyt/audit/actor/ActorDisplayResolver.kt)-bønne automatisk (så snart en `ActorNameLookup`-implementasjon er tilgjengelig). Bruk den fra tjenestens mapping-lag:
+
+```kotlin
+@Service
+class MyEntityMappingService(private val resolver: ActorDisplayResolver) {
+    fun toDto(entity: MyEntity) = MyEntityDto(
+        // ...
+        createdAt = entity.createdAt,
+        createdBy = resolver.resolve(entity.createdBy),
+        createdByActor = entity.createdBy,
+    )
+
+    fun toDtos(entities: List<MyEntity>): List<MyEntityDto> {
+        val displays = resolver.resolveAll(entities.map { it.createdBy })
+        return entities.map { entity ->
+            MyEntityDto(
+                createdAt = entity.createdAt,
+                createdBy = displays[entity.createdBy],
+                createdByActor = entity.createdBy,
+            )
+        }
+    }
+}
+```
+
+`resolveAll` gjør ett batch-kall pr side og bør brukes for listeresponser.
+
+### Fallback-verdier
+
+| Actor-type      | Standard `String`-verdi                     |
+|-----------------|---------------------------------------------|
+| `User` (funnet) | Navn fra `fint-flyt-authorization-service`  |
+| `User` (miss)   | `null` (kan overstyres til f.eks. "Ukjent bruker") |
+| `System`        | `"System"`                                  |
+| `M2M`           | `clientId` (kan overstyres til fast merkelapp) |
+| `Unknown`       | `"Ukjent"`                                  |
+
+Fallbacks kan overstyres per tjeneste i `application.yaml`:
+
+```yaml
+novari:
+  flyt:
+    audit:
+      display:
+        system: "FLYT-plattform"
+        unknown-user: "Ukjent bruker"
+        unknown: null    # returner null i stedet for "Ukjent"
+        m2m: "Systemintegrasjon"
+```
+
+### Lokal hydrering (auth-service selv)
+
+Default-implementasjonen ([`HttpActorNameLookup`](src/main/kotlin/no/novari/flyt/audit/actor/ActorNameLookup.kt)) kaller `fint-flyt-authorization-service` over HTTP. Auth-service selv skal ikke kalle seg selv — den registrerer en egen `ActorNameLookup`-bønne som slår opp lokalt:
+
+```kotlin
+@Configuration
+class LocalActorNameLookupConfig {
+    @Bean
+    fun localActorNameLookup(userRepository: UserRepository): ActorNameLookup =
+        ActorNameLookup { oids ->
+            userRepository.findAllByObjectIdentifierIn(oids)
+                .associate { it.objectIdentifier to it.name }
+        }
+}
+```
+
+Denne bønnen overstyrer default via `@ConditionalOnMissingBean(ActorNameLookup::class)`. Med lokal lookup trengs ikke [`AuthorizationClient`](src/main/kotlin/no/novari/flyt/audit/authorization/AuthorizationClient.kt)/OAuth2-klient-avhengigheten i den tjenesten.
+
 ## OAuth2-oppsett (påkrevd for Variant D/E med historikk-API)
 
 Starteren kaller `fint-flyt-authorization-service` for å hente brukerens navn ved presentasjons-tid. Dette krever OAuth2 `client_credentials`-oppsett med tre konkrete steg.
@@ -220,6 +307,10 @@ Tjenester som kun bruker Variant B/C (ingen historikk-API) kaller aldri `Authori
 | `novari.flyt.audit.authorization.cache.enabled`          | `true`                                        | Aktiver Caffeine-cache for navn-oppslag |
 | `novari.flyt.audit.authorization.cache.ttl`              | `5m`                                          | Cache time-to-live                      |
 | `novari.flyt.audit.authorization.cache.max-size`         | `10000`                                       | Maks antall oppføringer i cache         |
+| `novari.flyt.audit.display.system`                       | `System`                                      | Visningsverdi for `Actor.System`        |
+| `novari.flyt.audit.display.unknown`                      | `Ukjent`                                      | Visningsverdi for `Actor.Unknown`       |
+| `novari.flyt.audit.display.unknown-user`                 | `null`                                        | Visningsverdi for `User` som ikke ble funnet |
+| `novari.flyt.audit.display.m2m`                          | `null`                                        | Visningsverdi for `Actor.M2M` (null → bruk `clientId`) |
 
 ## Bygging lokalt
 

@@ -4,8 +4,8 @@ import io.micrometer.core.instrument.MeterRegistry
 import io.micrometer.core.instrument.simple.SimpleMeterRegistry
 import no.novari.flyt.audit.actor.Actor
 import no.novari.flyt.audit.actor.ActorAuditorAware
+import no.novari.flyt.audit.actor.ActorEnrichmentService
 import no.novari.flyt.audit.authorization.AuthorizationClient
-import no.novari.flyt.audit.history.ActorEnrichmentService
 import no.novari.flyt.audit.metrics.AuditMetrics
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Test

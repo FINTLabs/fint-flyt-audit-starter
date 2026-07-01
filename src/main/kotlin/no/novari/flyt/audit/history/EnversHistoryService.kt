@@ -2,6 +2,7 @@ package no.novari.flyt.audit.history
 
 import jakarta.persistence.EntityManager
 import no.novari.flyt.audit.actor.Actor
+import no.novari.flyt.audit.actor.ActorEnrichmentService
 import no.novari.flyt.audit.revision.ActorRevisionEntity
 import org.hibernate.envers.AuditReaderFactory
 import org.hibernate.envers.RevisionType
