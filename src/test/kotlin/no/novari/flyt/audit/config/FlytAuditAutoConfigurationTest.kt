@@ -64,9 +64,9 @@ class FlytAuditAutoConfigurationTest {
     }
 
     @Test
-    fun `actorEnrichmentService-bønne registreres ikke uten authorizationClient`() {
+    fun `actorEnrichmentService-bønne registreres via no-op lookup uten authorizationClient`() {
         contextRunner.run { context ->
-            assertThat(context).doesNotHaveBean(ActorEnrichmentService::class.java)
+            assertThat(context).hasSingleBean(ActorEnrichmentService::class.java)
         }
     }
 

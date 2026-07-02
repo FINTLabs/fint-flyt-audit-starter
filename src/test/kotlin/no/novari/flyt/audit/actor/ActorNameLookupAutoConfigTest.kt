@@ -42,10 +42,12 @@ class ActorNameLookupAutoConfigTest {
     }
 
     @Test
-    fun `uten AuthorizationClient registreres ingen lookup eller resolver`() {
+    fun `uten AuthorizationClient faller lookup tilbake til no-op, men resolver registreres fortsatt`() {
         contextRunner.run { context ->
-            assertThat(context).doesNotHaveBean(ActorNameLookup::class.java)
-            assertThat(context).doesNotHaveBean(ActorDisplayResolver::class.java)
+            assertThat(context).hasSingleBean(ActorNameLookup::class.java)
+            assertThat(context.getBean(ActorNameLookup::class.java))
+                .isInstanceOf(NoOpActorNameLookup::class.java)
+            assertThat(context).hasSingleBean(ActorDisplayResolver::class.java)
         }
     }
 

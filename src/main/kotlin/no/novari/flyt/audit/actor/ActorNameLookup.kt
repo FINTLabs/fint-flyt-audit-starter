@@ -29,3 +29,17 @@ class HttpActorNameLookup(
             .associate { it.objectIdentifier to it.name }
     }
 }
+
+/**
+ * Fallback for konsumenter som verken har OAuth2-klient mot `fint-flyt-authorization-service`
+ * konfigurert, eller registrerer sin egen [ActorNameLookup] (som `fint-flyt-authorization-service`
+ * selv gjør). Slår aldri opp navn — [ActorDisplayResolver] faller da tilbake til
+ * `unknownUser`/`system`/`unknown`-verdiene fra [ActorDisplayProperties] for alle aktører.
+ *
+ * Finnes for at [ActorDisplayResolver] alltid skal være tilgjengelig som bean, selv for
+ * tjenester som kun bruker Variant B/C uten navn-hydrering — se README-seksjonen
+ * "Trenger du ikke navn-hydrering?".
+ */
+class NoOpActorNameLookup : ActorNameLookup {
+    override fun lookupNames(oids: Collection<UUID>): Map<UUID, String?> = emptyMap()
+}

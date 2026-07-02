@@ -8,6 +8,7 @@ import no.novari.flyt.audit.actor.ActorDisplayResolver
 import no.novari.flyt.audit.actor.ActorEnrichmentService
 import no.novari.flyt.audit.actor.ActorNameLookup
 import no.novari.flyt.audit.actor.HttpActorNameLookup
+import no.novari.flyt.audit.actor.NoOpActorNameLookup
 import no.novari.flyt.audit.authorization.AuthorizationClient
 import no.novari.flyt.audit.authorization.AuthorizationProperties
 import no.novari.flyt.audit.authorization.AuthorizationRestClientConfiguration
@@ -31,10 +32,6 @@ import org.springframework.web.client.RestClient
 @EnableConfigurationProperties(AuthorizationProperties::class, ActorDisplayProperties::class)
 @Import(AuthorizationRestClientConfiguration::class)
 class FlytAuditAutoConfiguration {
-    // JPA Auditing er flyttet til FlytAuditJpaAuditingAutoConfiguration — den må kjøres
-    // via auto-config-mekanismen (ikke via @Import fra @EnableFlytAuditing) for at
-    // @ConditionalOnBean(EntityManagerFactory) skal evalueres på riktig tidspunkt.
-
     @Bean
     @ConditionalOnMissingBean(name = ["flytAuditorAware"])
     fun flytAuditorAware(): AuditorAware<Actor> = ActorAuditorAware()
@@ -60,12 +57,14 @@ class FlytAuditAutoConfiguration {
     fun httpActorNameLookup(client: AuthorizationClient): ActorNameLookup = HttpActorNameLookup(client)
 
     @Bean
-    @ConditionalOnBean(ActorNameLookup::class)
+    @ConditionalOnMissingBean(ActorNameLookup::class)
+    fun noOpActorNameLookup(): ActorNameLookup = NoOpActorNameLookup()
+
+    @Bean
     @ConditionalOnMissingBean
     fun actorEnrichmentService(lookup: ActorNameLookup) = ActorEnrichmentService(lookup)
 
     @Bean
-    @ConditionalOnBean(ActorNameLookup::class)
     @ConditionalOnMissingBean
     fun actorDisplayResolver(
         lookup: ActorNameLookup,
