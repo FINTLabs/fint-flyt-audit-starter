@@ -26,6 +26,10 @@ import java.time.Instant
  * migrerte rader i stedet for et forfalsket tidsstempel. Spring Data setter feltet automatisk
  * ved første insert på nye rader.
  *
+ * `createdBy` er nullable på objekt-nivå: et nykonstruert, ulagret objekt har `null` inntil
+ * JPA Auditing populerer feltet ved persist. Kolonnen er likevel `NOT NULL`, så et faktisk
+ * insert uten aktiv auditing feiler mot databasen (fail-fast).
+ *
  * `@Audited`-entiteter som arver denne klassen trenger ikke speile kolonnene i `_aud`-tabellen
  * — de er ekskludert fra Envers via `@NotAudited`.
  */
@@ -42,6 +46,6 @@ abstract class CreatedAuditedEntity {
     @CreatedBy
     @Type(JsonType::class)
     @Column(name = "created_by", columnDefinition = "jsonb", nullable = false, updatable = false)
-    lateinit var createdBy: Actor
+    var createdBy: Actor? = null
         protected set
 }

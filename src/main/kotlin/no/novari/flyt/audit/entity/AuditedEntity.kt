@@ -34,6 +34,6 @@ abstract class AuditedEntity : CreatedAuditedEntity() {
     @LastModifiedBy
     @Type(JsonType::class)
     @Column(name = "last_modified_by", columnDefinition = "jsonb", nullable = false)
-    lateinit var lastModifiedBy: Actor
+    var lastModifiedBy: Actor? = null
         protected set
 }
