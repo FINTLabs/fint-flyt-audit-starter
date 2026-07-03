@@ -254,6 +254,9 @@ spring:
   security:
     oauth2:
       client:
+        provider:
+          fint-idp:
+            token-uri: https://idp.felleskomponent.no/nidp/oauth/nam/token
         registration:
           authorization-service:
             authorization-grant-type: client_credentials
@@ -261,6 +264,8 @@ spring:
             client-secret: ${fint.flyt.authorization.sso.client-secret}
             provider: fint-idp
 ```
+
+`provider.fint-idp` registreres ikke automatisk av noen starter — den må deklareres eksplisitt som over (samme `token-uri` brukes av alle FLYT-tjenester).
 
 `novari.flyt.audit.authorization.base-url` trenger normalt ikke settes — den er som standard `http://fint-flyt-authorization-service:8080`, som er riktig i Kubernetes-miljøene. Overstyr kun ved behov, f.eks. i `local-staging`:
 
