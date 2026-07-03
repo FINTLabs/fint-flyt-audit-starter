@@ -1,5 +1,6 @@
 package no.novari.flyt.audit.authorization
 
+import org.springframework.beans.factory.ObjectProvider
 import org.springframework.beans.factory.annotation.Qualifier
 import org.springframework.boot.autoconfigure.AutoConfiguration
 import org.springframework.boot.autoconfigure.AutoConfigureAfter
@@ -54,22 +55,28 @@ class AuthorizationRestClientConfiguration {
         return manager
     }
 
+    /**
+     * `ClientHttpRequestFactory` er ikke en standard Spring Boot-bønne — den injiseres som
+     * [ObjectProvider] slik at konsumenter uten en egendefinert factory faller tilbake til
+     * builder-defaulten i stedet for å feile ved oppstart.
+     */
     @Bean("authorizationRestClient")
     @ConditionalOnBean(OAuth2AuthorizedClientManager::class)
     fun authorizationRestClient(
         authorizationAuthorizedClientManager: OAuth2AuthorizedClientManager,
-        clientHttpRequestFactory: ClientHttpRequestFactory,
+        clientHttpRequestFactory: ObjectProvider<ClientHttpRequestFactory>,
         restClientBuilder: RestClient.Builder,
         props: AuthorizationProperties,
     ): RestClient {
         val interceptor = OAuth2ClientHttpRequestInterceptor(authorizationAuthorizedClientManager)
         interceptor.setClientRegistrationIdResolver { props.clientRegistrationId }
 
-        return restClientBuilder
-            .requestInterceptor(interceptor)
-            .requestFactory(clientHttpRequestFactory)
-            .baseUrl("${props.baseUrl}/api/intern-klient/authorization/users")
-            .build()
+        val builder =
+            restClientBuilder
+                .requestInterceptor(interceptor)
+                .baseUrl("${props.baseUrl}/api/intern-klient/authorization/users")
+        clientHttpRequestFactory.ifAvailable { builder.requestFactory(it) }
+        return builder.build()
     }
 
     @Bean
