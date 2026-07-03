@@ -1,9 +1,14 @@
 package no.novari.flyt.audit.authorization
 
+import org.springframework.beans.factory.annotation.Qualifier
+import org.springframework.boot.autoconfigure.AutoConfiguration
+import org.springframework.boot.autoconfigure.AutoConfigureAfter
 import org.springframework.boot.autoconfigure.condition.ConditionalOnBean
 import org.springframework.boot.autoconfigure.condition.ConditionalOnClass
+import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean
+import org.springframework.boot.autoconfigure.security.oauth2.client.OAuth2ClientAutoConfiguration
+import org.springframework.boot.context.properties.EnableConfigurationProperties
 import org.springframework.context.annotation.Bean
-import org.springframework.context.annotation.Configuration
 import org.springframework.http.client.ClientHttpRequestFactory
 import org.springframework.security.oauth2.client.AuthorizedClientServiceOAuth2AuthorizedClientManager
 import org.springframework.security.oauth2.client.OAuth2AuthorizedClientManager
@@ -13,8 +18,20 @@ import org.springframework.security.oauth2.client.registration.ClientRegistratio
 import org.springframework.security.oauth2.client.web.client.OAuth2ClientHttpRequestInterceptor
 import org.springframework.web.client.RestClient
 
-@Configuration
+/**
+ * Egen `@AutoConfiguration` (fremfor plain `@Configuration` importert via `@Import`) slik at
+ * [FlytAuditAutoConfiguration] kan bruke `@AutoConfigureAfter` for å garantere at
+ * `authorizationRestClient`-bønnen er registrert før dens `@ConditionalOnBean(name = [...])`
+ * evalueres. `@AutoConfigureAfter(OAuth2ClientAutoConfiguration::class)` her sikrer tilsvarende
+ * at `ClientRegistrationRepository`/`OAuth2AuthorizedClientService` fra Spring Boots egen
+ * autokonfigurasjon er registrert FØR denne klassens `@ConditionalOnBean`-sjekker evalueres.
+ * `@ConditionalOnBean` på tvers av auto-config-klasser uten eksplisitt rekkefølge er ikke
+ * pålitelig — se Spring Boot-dokumentasjonen om "creating your own auto-configuration".
+ */
+@AutoConfiguration
+@AutoConfigureAfter(OAuth2ClientAutoConfiguration::class)
 @ConditionalOnClass(ClientRegistrationRepository::class)
+@EnableConfigurationProperties(AuthorizationProperties::class)
 class AuthorizationRestClientConfiguration {
     @Bean
     @ConditionalOnBean(ClientRegistrationRepository::class)
@@ -53,5 +70,16 @@ class AuthorizationRestClientConfiguration {
             .requestFactory(clientHttpRequestFactory)
             .baseUrl("${props.baseUrl}/api/intern-klient/authorization/users")
             .build()
+    }
+
+    @Bean
+    @ConditionalOnBean(name = ["authorizationRestClient"])
+    @ConditionalOnMissingBean(AuthorizationClient::class)
+    fun authorizationClient(
+        @Qualifier("authorizationRestClient") restClient: RestClient,
+        props: AuthorizationProperties,
+    ): AuthorizationClient {
+        val base: AuthorizationClient = RestClientAuthorizationClient(restClient)
+        return if (props.cache.enabled) CachingAuthorizationClient(base, props.cache) else base
     }
 }

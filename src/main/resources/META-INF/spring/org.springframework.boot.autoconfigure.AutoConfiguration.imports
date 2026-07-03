@@ -1,2 +1,3 @@
+no.novari.flyt.audit.authorization.AuthorizationRestClientConfiguration
 no.novari.flyt.audit.config.FlytAuditAutoConfiguration
 no.novari.flyt.audit.config.FlytAuditJpaAuditingAutoConfiguration

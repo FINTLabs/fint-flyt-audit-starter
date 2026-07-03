@@ -10,27 +10,22 @@ import no.novari.flyt.audit.actor.ActorNameLookup
 import no.novari.flyt.audit.actor.HttpActorNameLookup
 import no.novari.flyt.audit.actor.NoOpActorNameLookup
 import no.novari.flyt.audit.authorization.AuthorizationClient
-import no.novari.flyt.audit.authorization.AuthorizationProperties
 import no.novari.flyt.audit.authorization.AuthorizationRestClientConfiguration
-import no.novari.flyt.audit.authorization.CachingAuthorizationClient
-import no.novari.flyt.audit.authorization.RestClientAuthorizationClient
 import no.novari.flyt.audit.metrics.AuditMetrics
-import org.springframework.beans.factory.annotation.Qualifier
 import org.springframework.boot.autoconfigure.AutoConfiguration
+import org.springframework.boot.autoconfigure.AutoConfigureAfter
 import org.springframework.boot.autoconfigure.condition.ConditionalOnBean
 import org.springframework.boot.autoconfigure.condition.ConditionalOnClass
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean
 import org.springframework.boot.context.properties.EnableConfigurationProperties
 import org.springframework.context.annotation.Bean
-import org.springframework.context.annotation.Import
 import org.springframework.data.domain.AuditorAware
 import org.springframework.data.jpa.domain.support.AuditingEntityListener
-import org.springframework.web.client.RestClient
 
 @AutoConfiguration
+@AutoConfigureAfter(AuthorizationRestClientConfiguration::class)
 @ConditionalOnClass(AuditingEntityListener::class)
-@EnableConfigurationProperties(AuthorizationProperties::class, ActorDisplayProperties::class)
-@Import(AuthorizationRestClientConfiguration::class)
+@EnableConfigurationProperties(ActorDisplayProperties::class)
 class FlytAuditAutoConfiguration {
     @Bean
     @ConditionalOnMissingBean(name = ["flytAuditorAware"])
@@ -39,17 +34,6 @@ class FlytAuditAutoConfiguration {
     @Bean
     @ConditionalOnMissingBean
     fun applicationContextHolder() = ApplicationContextHolder()
-
-    @Bean
-    @ConditionalOnBean(name = ["authorizationRestClient"])
-    @ConditionalOnMissingBean(AuthorizationClient::class)
-    fun authorizationClient(
-        @Qualifier("authorizationRestClient") restClient: RestClient,
-        props: AuthorizationProperties,
-    ): AuthorizationClient {
-        val base: AuthorizationClient = RestClientAuthorizationClient(restClient)
-        return if (props.cache.enabled) CachingAuthorizationClient(base, props.cache) else base
-    }
 
     @Bean
     @ConditionalOnBean(AuthorizationClient::class)
