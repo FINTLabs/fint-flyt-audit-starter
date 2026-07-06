@@ -55,10 +55,7 @@ class Oauth2ProfileFileReproTest {
     }
 
     @Test
-    fun `manglende client-id-secret velter ikke konteksten — diagnosebønnen er defensiv`() {
-        // Ingen System properties satt: placeholderen ${fint.flyt.authorization.sso.client-id}
-        // i application-oauth2-repro.yaml er uløselig, akkurat som i et lokalt testmiljø uten
-        // OAuth2-secrets. flytAuditOauth2ClientDiagnostics skal logge og fortsette, ikke feile.
+    fun `manglende client-id-secret velter ikke konteksten`() {
         val context =
             SpringApplicationBuilder(TestApp::class.java)
                 .web(WebApplicationType.NONE)

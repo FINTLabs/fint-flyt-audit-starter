@@ -21,54 +21,14 @@ import org.springframework.boot.autoconfigure.condition.ConditionalOnClass
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean
 import org.springframework.boot.context.properties.EnableConfigurationProperties
 import org.springframework.context.annotation.Bean
-import org.springframework.core.env.Environment
 import org.springframework.data.domain.AuditorAware
 import org.springframework.data.jpa.domain.support.AuditingEntityListener
-import org.springframework.security.oauth2.client.registration.ClientRegistrationRepository
 
 @AutoConfiguration
 @AutoConfigureAfter(AuthorizationRestClientConfiguration::class)
 @ConditionalOnClass(AuditingEntityListener::class)
 @EnableConfigurationProperties(ActorDisplayProperties::class)
 class FlytAuditAutoConfiguration {
-    @Bean
-    @ConditionalOnClass(ClientRegistrationRepository::class)
-    fun flytAuditOauth2ClientDiagnostics(
-        environment: Environment,
-        clientRegistrationRepositories: ObjectProvider<ClientRegistrationRepository>,
-    ): FlytAuditOauth2ClientDiagnostics {
-        // Denne bønnen er kun diagnostikk og skal aldri kunne velte konteksten. Både
-        // environment.getProperty (placeholder kan være uløselig, f.eks. manglende env-var i
-        // tester) og ObjectProvider.ifAvailable (tvinger Spring til å forsøke instansiere
-        // kandidatbønnen) kan kaste — alt fanges og logges i stedet for å propagere.
-        fun safeProperty(key: String): String =
-            try {
-                environment.getProperty(key) ?: "MANGLER"
-            } catch (ex: Exception) {
-                "KUNNE IKKE RESOLVE: ${ex.message}"
-            }
-
-        val clientId = safeProperty("spring.security.oauth2.client.registration.authorization-service.client-id")
-        val provider = safeProperty("spring.security.oauth2.client.registration.authorization-service.provider")
-        val tokenUri = safeProperty("spring.security.oauth2.client.provider.fint-idp.token-uri")
-        val repositoryDescription =
-            try {
-                clientRegistrationRepositories.ifAvailable?.javaClass?.name ?: "INGEN BØNNE"
-            } catch (ex: Exception) {
-                "FEILET VED OPPRETTELSE: ${ex.message}"
-            }
-        logger.info(
-            "OAuth2-klient-diagnostikk: registration.client-id={} (lengde={}), " +
-                "registration.provider={}, provider.fint-idp.token-uri={}, ClientRegistrationRepository={}",
-            if (clientId == "MANGLER") clientId else "satt",
-            clientId.length,
-            provider,
-            tokenUri,
-            repositoryDescription,
-        )
-        return FlytAuditOauth2ClientDiagnostics()
-    }
-
     @Bean
     @ConditionalOnMissingBean(name = ["flytAuditorAware"])
     fun flytAuditorAware(): AuditorAware<Actor> = ActorAuditorAware()
@@ -120,6 +80,3 @@ class FlytAuditAutoConfiguration {
         val logger = LoggerFactory.getLogger(FlytAuditAutoConfiguration::class.java)
     }
 }
-
-/** Tom markørklasse — selve verdien av bønnen er loggingen i factory-metoden. */
-class FlytAuditOauth2ClientDiagnostics
