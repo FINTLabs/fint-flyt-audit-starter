@@ -12,6 +12,7 @@ import no.novari.flyt.audit.actor.NoOpActorNameLookup
 import no.novari.flyt.audit.authorization.AuthorizationClient
 import no.novari.flyt.audit.authorization.AuthorizationRestClientConfiguration
 import no.novari.flyt.audit.metrics.AuditMetrics
+import org.slf4j.LoggerFactory
 import org.springframework.boot.autoconfigure.AutoConfiguration
 import org.springframework.boot.autoconfigure.AutoConfigureAfter
 import org.springframework.boot.autoconfigure.condition.ConditionalOnBean
@@ -38,11 +39,20 @@ class FlytAuditAutoConfiguration {
     @Bean
     @ConditionalOnBean(AuthorizationClient::class)
     @ConditionalOnMissingBean(ActorNameLookup::class)
-    fun httpActorNameLookup(client: AuthorizationClient): ActorNameLookup = HttpActorNameLookup(client)
+    fun httpActorNameLookup(client: AuthorizationClient): ActorNameLookup {
+        logger.info("Registrerer HttpActorNameLookup — navnehydrering mot authorization-service er aktiv")
+        return HttpActorNameLookup(client)
+    }
 
     @Bean
     @ConditionalOnMissingBean(ActorNameLookup::class)
-    fun noOpActorNameLookup(): ActorNameLookup = NoOpActorNameLookup()
+    fun noOpActorNameLookup(): ActorNameLookup {
+        logger.warn(
+            "Ingen AuthorizationClient eller egendefinert ActorNameLookup funnet — " +
+                "faller tilbake til NoOpActorNameLookup. createdBy/lastModifiedBy vil ikke hydreres til navn.",
+        )
+        return NoOpActorNameLookup()
+    }
 
     @Bean
     @ConditionalOnMissingBean
@@ -59,4 +69,8 @@ class FlytAuditAutoConfiguration {
     @ConditionalOnBean(MeterRegistry::class)
     @ConditionalOnMissingBean
     fun auditMetrics(registry: MeterRegistry) = AuditMetrics(registry)
+
+    private companion object {
+        val logger = LoggerFactory.getLogger(FlytAuditAutoConfiguration::class.java)
+    }
 }

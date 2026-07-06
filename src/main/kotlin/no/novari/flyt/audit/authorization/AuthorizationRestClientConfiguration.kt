@@ -1,5 +1,6 @@
 package no.novari.flyt.audit.authorization
 
+import org.slf4j.LoggerFactory
 import org.springframework.beans.factory.ObjectProvider
 import org.springframework.beans.factory.annotation.Qualifier
 import org.springframework.boot.autoconfigure.AutoConfiguration
@@ -40,6 +41,7 @@ class AuthorizationRestClientConfiguration {
         clientRegistrationRepository: ClientRegistrationRepository,
         authorizedClientService: OAuth2AuthorizedClientService,
     ): OAuth2AuthorizedClientManager {
+        logger.info("Registrerer authorizationAuthorizedClientManager")
         val manager =
             AuthorizedClientServiceOAuth2AuthorizedClientManager(
                 clientRegistrationRepository,
@@ -68,6 +70,7 @@ class AuthorizationRestClientConfiguration {
         restClientBuilder: RestClient.Builder,
         props: AuthorizationProperties,
     ): RestClient {
+        logger.info("Registrerer authorizationRestClient (baseUrl={})", props.baseUrl)
         val interceptor = OAuth2ClientHttpRequestInterceptor(authorizationAuthorizedClientManager)
         interceptor.setClientRegistrationIdResolver { props.clientRegistrationId }
 
@@ -86,7 +89,12 @@ class AuthorizationRestClientConfiguration {
         @Qualifier("authorizationRestClient") restClient: RestClient,
         props: AuthorizationProperties,
     ): AuthorizationClient {
+        logger.info("Registrerer AuthorizationClient (cache={})", props.cache.enabled)
         val base: AuthorizationClient = RestClientAuthorizationClient(restClient)
         return if (props.cache.enabled) CachingAuthorizationClient(base, props.cache) else base
+    }
+
+    private companion object {
+        val logger = LoggerFactory.getLogger(AuthorizationRestClientConfiguration::class.java)
     }
 }
