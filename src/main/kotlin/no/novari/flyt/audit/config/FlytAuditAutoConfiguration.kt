@@ -13,6 +13,7 @@ import no.novari.flyt.audit.authorization.AuthorizationClient
 import no.novari.flyt.audit.authorization.AuthorizationRestClientConfiguration
 import no.novari.flyt.audit.metrics.AuditMetrics
 import org.slf4j.LoggerFactory
+import org.springframework.beans.factory.ObjectProvider
 import org.springframework.boot.autoconfigure.AutoConfiguration
 import org.springframework.boot.autoconfigure.AutoConfigureAfter
 import org.springframework.boot.autoconfigure.condition.ConditionalOnBean
@@ -20,14 +21,38 @@ import org.springframework.boot.autoconfigure.condition.ConditionalOnClass
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean
 import org.springframework.boot.context.properties.EnableConfigurationProperties
 import org.springframework.context.annotation.Bean
+import org.springframework.core.env.Environment
 import org.springframework.data.domain.AuditorAware
 import org.springframework.data.jpa.domain.support.AuditingEntityListener
+import org.springframework.security.oauth2.client.registration.ClientRegistrationRepository
 
 @AutoConfiguration
 @AutoConfigureAfter(AuthorizationRestClientConfiguration::class)
 @ConditionalOnClass(AuditingEntityListener::class)
 @EnableConfigurationProperties(ActorDisplayProperties::class)
 class FlytAuditAutoConfiguration {
+    @Bean
+    @ConditionalOnClass(ClientRegistrationRepository::class)
+    fun flytAuditOauth2ClientDiagnostics(
+        environment: Environment,
+        clientRegistrationRepositories: ObjectProvider<ClientRegistrationRepository>,
+    ): FlytAuditOauth2ClientDiagnostics {
+        val clientId = environment.getProperty("spring.security.oauth2.client.registration.authorization-service.client-id")
+        val provider = environment.getProperty("spring.security.oauth2.client.registration.authorization-service.provider")
+        val tokenUri = environment.getProperty("spring.security.oauth2.client.provider.fint-idp.token-uri")
+        val repository = clientRegistrationRepositories.ifAvailable
+        logger.info(
+            "OAuth2-klient-diagnostikk: registration.client-id={} (lengde={}), " +
+                "registration.provider={}, provider.fint-idp.token-uri={}, ClientRegistrationRepository={}",
+            if (clientId == null) "MANGLER" else "satt",
+            clientId?.length ?: 0,
+            provider ?: "MANGLER",
+            tokenUri ?: "MANGLER",
+            repository?.javaClass?.name ?: "INGEN BØNNE",
+        )
+        return FlytAuditOauth2ClientDiagnostics()
+    }
+
     @Bean
     @ConditionalOnMissingBean(name = ["flytAuditorAware"])
     fun flytAuditorAware(): AuditorAware<Actor> = ActorAuditorAware()
@@ -74,3 +99,6 @@ class FlytAuditAutoConfiguration {
         val logger = LoggerFactory.getLogger(FlytAuditAutoConfiguration::class.java)
     }
 }
+
+/** Tom markørklasse — selve verdien av bønnen er loggingen i factory-metoden. */
+class FlytAuditOauth2ClientDiagnostics
