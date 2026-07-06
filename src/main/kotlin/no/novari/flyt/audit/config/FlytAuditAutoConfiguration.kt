@@ -77,17 +77,22 @@ class FlytAuditAutoConfiguration {
     @ConditionalOnMissingBean
     fun applicationContextHolder() = ApplicationContextHolder()
 
+    /**
+     * `@ConditionalOnBean(AuthorizationClient::class)` på to alternative `@Bean`-metoder er
+     * ordre-sensitivt: den evalueres i REGISTER_BEAN-fasen, som kan kjøre før
+     * [AuthorizationRestClientConfiguration] sin bønnekjede faktisk er registrert, selv med
+     * `@AutoConfigureAfter`. Én bønn med [ObjectProvider] unngår hele problemet — oppslaget skjer
+     * lazy, når denne metoden faktisk kjører, og trigger da AuthorizationClient sin fulle
+     * bønnekjede uavhengig av registreringsrekkefølge.
+     */
     @Bean
-    @ConditionalOnBean(AuthorizationClient::class)
     @ConditionalOnMissingBean(ActorNameLookup::class)
-    fun httpActorNameLookup(client: AuthorizationClient): ActorNameLookup {
-        logger.info("Registrerer HttpActorNameLookup — navnehydrering mot authorization-service er aktiv")
-        return HttpActorNameLookup(client)
-    }
-
-    @Bean
-    @ConditionalOnMissingBean(ActorNameLookup::class)
-    fun noOpActorNameLookup(): ActorNameLookup {
+    fun actorNameLookup(authorizationClient: ObjectProvider<AuthorizationClient>): ActorNameLookup {
+        val client = authorizationClient.ifAvailable
+        if (client != null) {
+            logger.info("Registrerer HttpActorNameLookup — navnehydrering mot authorization-service er aktiv")
+            return HttpActorNameLookup(client)
+        }
         logger.warn(
             "Ingen AuthorizationClient eller egendefinert ActorNameLookup funnet — " +
                 "faller tilbake til NoOpActorNameLookup. createdBy/lastModifiedBy vil ikke hydreres til navn.",
