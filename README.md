@@ -267,7 +267,24 @@ spring:
 
 `provider.fint-idp` registreres ikke automatisk av noen starter — den må deklareres eksplisitt som over (samme `token-uri` brukes av alle FLYT-tjenester).
 
-`novari.flyt.audit.authorization.base-url` trenger normalt ikke settes — den er som standard `http://fint-flyt-authorization-service:8080`, som er riktig i Kubernetes-miljøene. Overstyr kun ved behov, f.eks. i `local-staging`:
+`novari.flyt.audit.authorization.base-url` er som standard `http://fint-flyt-authorization-service:8080`.
+
+**NB:** FLYT-tjenester deployes typisk med `server.servlet.context-path` satt per miljø/tenant
+(f.eks. `/beta/afk-no`), injisert som miljøvariabel av "flais"-CRD-en. `fint-flyt-authorization-service`
+er deployet med samme mønster, så et rent internt kall mot `http://fint-flyt-authorization-service:8080`
+(uten context-path) gir 404 i disse miljøene. Siden konsumenten og `fint-flyt-authorization-service` er
+ko-lokalisert i samme miljø/tenant, deler de samme context-path — bruk `${server.servlet.context-path:}`
+til å gjenbruke tjenestens egen verdi:
+
+```yaml
+novari:
+  flyt:
+    audit:
+      authorization:
+        base-url: 'http://fint-flyt-authorization-service:8080${server.servlet.context-path:}'
+```
+
+Overstyr til en fast verdi kun ved behov, f.eks. i `local-staging` (som ikke har `server.servlet.context-path` satt):
 
 ```yaml
 novari:
