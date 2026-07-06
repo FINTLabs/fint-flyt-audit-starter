@@ -37,18 +37,34 @@ class FlytAuditAutoConfiguration {
         environment: Environment,
         clientRegistrationRepositories: ObjectProvider<ClientRegistrationRepository>,
     ): FlytAuditOauth2ClientDiagnostics {
-        val clientId = environment.getProperty("spring.security.oauth2.client.registration.authorization-service.client-id")
-        val provider = environment.getProperty("spring.security.oauth2.client.registration.authorization-service.provider")
-        val tokenUri = environment.getProperty("spring.security.oauth2.client.provider.fint-idp.token-uri")
-        val repository = clientRegistrationRepositories.ifAvailable
+        // Denne bønnen er kun diagnostikk og skal aldri kunne velte konteksten. Både
+        // environment.getProperty (placeholder kan være uløselig, f.eks. manglende env-var i
+        // tester) og ObjectProvider.ifAvailable (tvinger Spring til å forsøke instansiere
+        // kandidatbønnen) kan kaste — alt fanges og logges i stedet for å propagere.
+        fun safeProperty(key: String): String =
+            try {
+                environment.getProperty(key) ?: "MANGLER"
+            } catch (ex: Exception) {
+                "KUNNE IKKE RESOLVE: ${ex.message}"
+            }
+
+        val clientId = safeProperty("spring.security.oauth2.client.registration.authorization-service.client-id")
+        val provider = safeProperty("spring.security.oauth2.client.registration.authorization-service.provider")
+        val tokenUri = safeProperty("spring.security.oauth2.client.provider.fint-idp.token-uri")
+        val repositoryDescription =
+            try {
+                clientRegistrationRepositories.ifAvailable?.javaClass?.name ?: "INGEN BØNNE"
+            } catch (ex: Exception) {
+                "FEILET VED OPPRETTELSE: ${ex.message}"
+            }
         logger.info(
             "OAuth2-klient-diagnostikk: registration.client-id={} (lengde={}), " +
                 "registration.provider={}, provider.fint-idp.token-uri={}, ClientRegistrationRepository={}",
-            if (clientId == null) "MANGLER" else "satt",
-            clientId?.length ?: 0,
-            provider ?: "MANGLER",
-            tokenUri ?: "MANGLER",
-            repository?.javaClass?.name ?: "INGEN BØNNE",
+            if (clientId == "MANGLER") clientId else "satt",
+            clientId.length,
+            provider,
+            tokenUri,
+            repositoryDescription,
         )
         return FlytAuditOauth2ClientDiagnostics()
     }
