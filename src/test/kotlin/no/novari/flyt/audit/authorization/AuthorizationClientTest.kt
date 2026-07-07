@@ -2,6 +2,7 @@ package no.novari.flyt.audit.authorization
 
 import com.fasterxml.jackson.databind.ObjectMapper
 import org.assertj.core.api.Assertions.assertThat
+import org.assertj.core.api.Assertions.assertThatThrownBy
 import org.junit.jupiter.api.Test
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.beans.factory.annotation.Qualifier
@@ -14,8 +15,10 @@ import org.springframework.test.context.TestPropertySource
 import org.springframework.test.web.client.MockRestServiceServer
 import org.springframework.test.web.client.match.MockRestRequestMatchers.requestTo
 import org.springframework.test.web.client.response.MockRestResponseCreators.withResourceNotFound
+import org.springframework.test.web.client.response.MockRestResponseCreators.withServerError
 import org.springframework.test.web.client.response.MockRestResponseCreators.withSuccess
 import org.springframework.web.client.RestClient
+import org.springframework.web.client.RestClientResponseException
 import java.util.UUID
 
 @RestClientTest
@@ -75,6 +78,18 @@ class AuthorizationClientTest {
         val result = client.findByObjectIdentifier(oid)
 
         assertThat(result).isNull()
+    }
+
+    @Test
+    fun `findByObjectIdentifier kaster videre ved annen HTTP-feil enn 404`() {
+        val oid = UUID.randomUUID()
+
+        server
+            .expect(requestTo("http://auth-service/api/intern-klient/authorization/users/$oid"))
+            .andRespond(withServerError())
+
+        assertThatThrownBy { client.findByObjectIdentifier(oid) }
+            .isInstanceOf(RestClientResponseException::class.java)
     }
 
     @Test

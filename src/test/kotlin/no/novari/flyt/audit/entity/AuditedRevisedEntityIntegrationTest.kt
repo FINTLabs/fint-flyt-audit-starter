@@ -81,7 +81,9 @@ class AuditedRevisedEntityIntegrationTest {
                 AuditedRevisedTestEntity::class.java,
                 entityManager,
                 ActorDisplayResolver(HttpActorNameLookup(fakeClient), ActorDisplayProperties()),
-            ) {}
+            ) {
+                override fun mapSnapshot(entity: AuditedRevisedTestEntity) = entity
+            }
     }
 
     @AfterEach

@@ -76,7 +76,9 @@ class EnversHistoryServiceIntegrationTest {
                 RevisedTestEntity::class.java,
                 entityManager,
                 ActorDisplayResolver(HttpActorNameLookup(fakeClient), ActorDisplayProperties()),
-            ) {}
+            ) {
+                override fun mapSnapshot(entity: RevisedTestEntity) = entity
+            }
     }
 
     @AfterEach

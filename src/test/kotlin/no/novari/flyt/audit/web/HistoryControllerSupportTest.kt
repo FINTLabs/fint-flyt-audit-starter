@@ -54,6 +54,8 @@ class HistoryControllerSupportTest {
         var lastAllPageable: Pageable? = null
         var lastAllFilter: HistoryFilter? = null
 
+        override fun mapSnapshot(entity: RevisedTestEntity) = entity
+
         override fun findHistory(
             id: Long,
             pageable: Pageable,

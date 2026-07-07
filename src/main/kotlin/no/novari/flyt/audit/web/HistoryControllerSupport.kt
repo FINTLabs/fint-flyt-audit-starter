@@ -15,8 +15,10 @@ import org.springframework.web.bind.annotation.PathVariable
  * @RestController
  * @RequestMapping("/api/intern/min-tjeneste/ting")
  * class TingHistoryController(service: TingHistoryService)
- *     : HistoryControllerSupport<Ting, Long>(service)
+ *     : HistoryControllerSupport<Ting, Long, TingView>(service)
  * ```
+ * der `TingHistoryService : EnversHistoryService<Ting, Long, TingView>` og `TingView`
+ * er formen på `snapshot` (se [EnversHistoryService.mapSnapshot]).
  * som da svarer på `GET /api/intern/min-tjeneste/ting/{id}/history`.
  *
  * Navn-hydrering og paginering håndteres i [EnversHistoryService] — denne

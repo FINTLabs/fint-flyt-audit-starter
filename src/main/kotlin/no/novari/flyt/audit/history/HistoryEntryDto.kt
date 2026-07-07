@@ -9,11 +9,12 @@ import java.time.Instant
  * @param timestamp når revisjonen ble registrert
  * @param type hva slags endring revisjonen representerer
  * @param actor aktøren som utførte endringen (slik den ble lagret)
- * @param actorDisplay visningsnavn for aktøren, hydrert fra
- *   `fint-flyt-authorization-service` ved presentasjons-tid. `null` for
- *   ikke-bruker-aktører, eller når navnet ikke kunne hentes.
- * @param snapshot entitetens tilstand i denne revisjonen. `null` for slettede
- *   revisjoner (DELETED).
+ * @param actorDisplay visningsnavn for aktøren, utledet av `ActorDisplayResolver` ved
+ *   presentasjons-tid: brukernavn hydrert fra `fint-flyt-authorization-service`, eller
+ *   fallback-verdi for System/M2M/Unknown (f.eks. `"System"`). `null` når navnet ikke
+ *   kunne hentes, eller når fallback-verdien er konfigurert til `null`.
+ * @param snapshot revisjonens tilstand slik `mapSnapshot` eksponerer den. `null` for
+ *   slettede revisjoner (DELETED).
  */
 data class HistoryEntryDto<T>(
     val timestamp: Instant,

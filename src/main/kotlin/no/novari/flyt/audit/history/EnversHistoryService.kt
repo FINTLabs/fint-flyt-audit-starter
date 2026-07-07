@@ -15,14 +15,20 @@ import java.time.Instant
  * Generisk basistjeneste for å lese endringshistorikk fra Hibernate Envers.
  *
  * Tre type-parametere: `T` er den auditerte entiteten, `ID` er nøkkeltypen, og `S`
- * er formen på `snapshot` i responsen. `S` er som standard lik `T` (rå entitet), men
- * kan overstyres ved å implementere [mapSnapshot] — da unngår konsumenten å eksponere
- * lazy-relasjoner, interne felt eller PII rått i REST-kontrakten:
+ * er formen på `snapshot` i responsen. Konsumenten må implementere [mapSnapshot] og velger
+ * dermed bevisst hva som eksponeres — enten en trygg DTO (unngår at lazy-relasjoner, interne
+ * felt eller PII lekker rått i REST-kontrakten), eller den rå entiteten (`S` = `T`):
  * ```
- * @Service
+ * // Trygg DTO:
  * class MyEntityHistoryService(em: EntityManager, resolver: ActorDisplayResolver)
  *     : EnversHistoryService<MyEntity, Long, MyEntityView>(MyEntity::class.java, em, resolver) {
  *     override fun mapSnapshot(entity: MyEntity) = MyEntityView(entity.id, entity.navn)
+ * }
+ *
+ * // Rå entitet (velg S = T bevisst):
+ * class MyEntityHistoryService(em: EntityManager, resolver: ActorDisplayResolver)
+ *     : EnversHistoryService<MyEntity, Long, MyEntity>(MyEntity::class.java, em, resolver) {
+ *     override fun mapSnapshot(entity: MyEntity) = entity
  * }
  * ```
  *
@@ -36,11 +42,11 @@ abstract class EnversHistoryService<T : Any, ID : Any, S : Any>(
     private val displayResolver: ActorDisplayResolver,
 ) {
     /**
-     * Mapper en entitets-revisjon til formen som eksponeres i `snapshot`. Standard er
-     * identitet (rå entitet, `S` = `T`). Overstyr for å eksponere en trygg DTO i stedet.
+     * Mapper en entitets-revisjon til formen som eksponeres i `snapshot`. Returner en trygg
+     * DTO for å unngå å lekke rå JPA-entitet, eller `entity` (med `S` = `T`) for å eksponere
+     * entiteten bevisst.
      */
-    @Suppress("UNCHECKED_CAST")
-    protected open fun mapSnapshot(entity: T): S? = entity as S?
+    protected abstract fun mapSnapshot(entity: T): S?
 
     open fun findHistory(
         id: ID,
