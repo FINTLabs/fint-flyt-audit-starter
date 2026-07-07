@@ -4,7 +4,7 @@ import io.micrometer.core.instrument.MeterRegistry
 import io.micrometer.core.instrument.simple.SimpleMeterRegistry
 import no.novari.flyt.audit.actor.Actor
 import no.novari.flyt.audit.actor.ActorAuditorAware
-import no.novari.flyt.audit.actor.ActorEnrichmentService
+import no.novari.flyt.audit.actor.ActorDisplayResolver
 import no.novari.flyt.audit.authorization.AuthorizationClient
 import no.novari.flyt.audit.metrics.AuditMetrics
 import org.assertj.core.api.Assertions.assertThat
@@ -64,20 +64,20 @@ class FlytAuditAutoConfigurationTest {
     }
 
     @Test
-    fun `actorEnrichmentService-bønne registreres via no-op lookup uten authorizationClient`() {
+    fun `actorDisplayResolver-bønne registreres via no-op lookup uten authorizationClient`() {
         contextRunner.run { context ->
-            assertThat(context).hasSingleBean(ActorEnrichmentService::class.java)
+            assertThat(context).hasSingleBean(ActorDisplayResolver::class.java)
         }
     }
 
     @Test
-    fun `actorEnrichmentService-bønne registreres når AuthorizationClient er tilgjengelig`() {
+    fun `actorDisplayResolver-bønne registreres når AuthorizationClient er tilgjengelig`() {
         contextRunner
             .withBean(
                 AuthorizationClient::class.java,
                 { mock(AuthorizationClient::class.java) },
             ).run { context ->
-                assertThat(context).hasSingleBean(ActorEnrichmentService::class.java)
+                assertThat(context).hasSingleBean(ActorDisplayResolver::class.java)
             }
     }
 

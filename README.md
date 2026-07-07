@@ -201,11 +201,11 @@ class LocalActorNameLookupConfig {
 
 Denne bønnen overstyrer default via `@ConditionalOnMissingBean(ActorNameLookup::class)`. Med lokal lookup trengs ikke [`AuthorizationClient`](src/main/kotlin/no/novari/flyt/audit/authorization/AuthorizationClient.kt)/OAuth2-klient-avhengigheten i den tjenesten.
 
-## OAuth2-oppsett (påkrevd for Variant D/E med historikk-API)
+## OAuth2-oppsett (for navnehydrering via historikk-API og REST-DTOer)
 
 Starteren kaller `fint-flyt-authorization-service` for å hente brukerens navn ved presentasjons-tid. Dette krever OAuth2 `client_credentials`-oppsett med tre konkrete steg.
 
-> **NB:** Mangler ett av stegene under, vil tjenesten **krasje ved oppstart** med en forklarende feilmelding.
+> **NB — fail-open:** Navnehydrering er "best effort". Mangler OAuth2-oppsettet, **krasjer ikke** tjenesten: starteren faller tilbake til [`NoOpActorNameLookup`](src/main/kotlin/no/novari/flyt/audit/actor/ActorNameLookup.kt) og logger en `WARN` ved oppstart, og `createdBy`/`lastModifiedBy`/`actorDisplay` blir da `null` (eller den konfigurerte fallback-verdien) i stedet for et navn. Er navn påkrevd i din tjeneste, verifiser `WARN`-loggen fravær ved oppstart. Kjøretidsfeil mot auth-service (nedetid, 401) håndteres likeledes failsafe — svaret returneres uten navn i stedet for å feile.
 
 ### Steg 1 — Gradle-avhengighet
 

@@ -5,7 +5,6 @@ import no.novari.flyt.audit.actor.Actor
 import no.novari.flyt.audit.actor.ActorAuditorAware
 import no.novari.flyt.audit.actor.ActorDisplayProperties
 import no.novari.flyt.audit.actor.ActorDisplayResolver
-import no.novari.flyt.audit.actor.ActorEnrichmentService
 import no.novari.flyt.audit.actor.ActorNameLookup
 import no.novari.flyt.audit.actor.HttpActorNameLookup
 import no.novari.flyt.audit.actor.NoOpActorNameLookup
@@ -59,10 +58,6 @@ class FlytAuditAutoConfiguration {
         )
         return NoOpActorNameLookup()
     }
-
-    @Bean
-    @ConditionalOnMissingBean
-    fun actorEnrichmentService(lookup: ActorNameLookup) = ActorEnrichmentService(lookup)
 
     @Bean
     @ConditionalOnMissingBean

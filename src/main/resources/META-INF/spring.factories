@@ -1,2 +1,0 @@
-org.springframework.boot.diagnostics.FailureAnalyzer=\
-  no.novari.flyt.audit.authorization.FlytAuditAuthorizationFailureAnalyzer

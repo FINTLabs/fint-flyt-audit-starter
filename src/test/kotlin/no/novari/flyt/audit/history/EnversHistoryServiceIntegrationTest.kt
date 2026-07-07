@@ -2,7 +2,8 @@ package no.novari.flyt.audit.history
 
 import jakarta.persistence.EntityManager
 import no.novari.flyt.audit.actor.Actor
-import no.novari.flyt.audit.actor.ActorEnrichmentService
+import no.novari.flyt.audit.actor.ActorDisplayProperties
+import no.novari.flyt.audit.actor.ActorDisplayResolver
 import no.novari.flyt.audit.actor.HttpActorNameLookup
 import no.novari.flyt.audit.authorization.AuthorizationClient
 import no.novari.flyt.audit.authorization.AuthorizedUserDto
@@ -62,7 +63,7 @@ class EnversHistoryServiceIntegrationTest {
             override fun lookupUsers(oids: List<UUID>) = oids.map { AuthorizedUserDto(it, "Ola Nordmann") }
         }
 
-    private lateinit var historyService: EnversHistoryService<RevisedTestEntity, Long>
+    private lateinit var historyService: EnversHistoryService<RevisedTestEntity, Long, RevisedTestEntity>
 
     @BeforeEach
     fun setUp() {
@@ -71,10 +72,10 @@ class EnversHistoryServiceIntegrationTest {
         jdbcTemplate.execute("DELETE FROM revised_test_entity")
 
         historyService =
-            object : EnversHistoryService<RevisedTestEntity, Long>(
+            object : EnversHistoryService<RevisedTestEntity, Long, RevisedTestEntity>(
                 RevisedTestEntity::class.java,
                 entityManager,
-                ActorEnrichmentService(HttpActorNameLookup(fakeClient)),
+                ActorDisplayResolver(HttpActorNameLookup(fakeClient), ActorDisplayProperties()),
             ) {}
     }
 
@@ -121,7 +122,7 @@ class EnversHistoryServiceIntegrationTest {
     }
 
     @Test
-    fun `System-aktør gir ingen actorDisplay`() {
+    fun `System-aktør får display via ActorDisplayResolver`() {
         SecurityContextHolder.clearContext()
         val saved = entityRepository.saveAndFlush(RevisedTestEntity().apply { name = "v1" })
         val id = saved.id!!
@@ -129,7 +130,7 @@ class EnversHistoryServiceIntegrationTest {
         val page = findHistory(id, PageRequest.of(0, 20))
 
         assertThat(page.content.single().actor).isEqualTo(Actor.System)
-        assertThat(page.content.single().actorDisplay).isNull()
+        assertThat(page.content.single().actorDisplay).isEqualTo("System")
     }
 
     @Test

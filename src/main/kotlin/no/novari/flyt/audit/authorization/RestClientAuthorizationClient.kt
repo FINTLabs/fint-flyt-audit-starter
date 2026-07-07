@@ -1,6 +1,7 @@
 package no.novari.flyt.audit.authorization
 
 import org.springframework.core.ParameterizedTypeReference
+import org.springframework.http.HttpStatus
 import org.springframework.web.client.RestClient
 import org.springframework.web.client.RestClientResponseException
 import org.springframework.web.client.body
@@ -16,8 +17,8 @@ class RestClientAuthorizationClient(
                 .uri("/{oid}", oid)
                 .retrieve()
                 .body<AuthorizedUserDto>()
-        } catch (_: RestClientResponseException) {
-            null
+        } catch (ex: RestClientResponseException) {
+            if (ex.statusCode == HttpStatus.NOT_FOUND) null else throw ex
         }
 
     override fun lookupUsers(oids: List<UUID>): List<AuthorizedUserDto> {

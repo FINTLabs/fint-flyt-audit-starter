@@ -12,8 +12,7 @@ import java.util.UUID
  * lokalt i sin egen `UserRepository` — se README-seksjon "Lokal hydrering".
  *
  * Returverdien inneholder én entry per oid; ukjent oid representeres som `null`-verdi.
- * Implementasjoner kan kaste ved feil — kallere ([ActorEnrichmentService],
- * [ActorDisplayResolver]) håndterer det failsafe.
+ * Implementasjoner kan kaste ved feil — kalleren [ActorDisplayResolver] håndterer det failsafe.
  */
 fun interface ActorNameLookup {
     fun lookupNames(oids: Collection<UUID>): Map<UUID, String?>

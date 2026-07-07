@@ -2,7 +2,8 @@ package no.novari.flyt.audit.web
 
 import jakarta.persistence.EntityManager
 import no.novari.flyt.audit.actor.Actor
-import no.novari.flyt.audit.actor.ActorEnrichmentService
+import no.novari.flyt.audit.actor.ActorDisplayProperties
+import no.novari.flyt.audit.actor.ActorDisplayResolver
 import no.novari.flyt.audit.actor.ActorNameLookup
 import no.novari.flyt.audit.history.EntityHistoryEntryDto
 import no.novari.flyt.audit.history.EnversHistoryService
@@ -36,16 +37,16 @@ class HistoryControllerSupportTest {
     @RestController
     @RequestMapping("/test-entities")
     class TestHistoryController(
-        service: EnversHistoryService<RevisedTestEntity, Long>,
-    ) : HistoryControllerSupport<RevisedTestEntity, Long>(service)
+        service: EnversHistoryService<RevisedTestEntity, Long, RevisedTestEntity>,
+    ) : HistoryControllerSupport<RevisedTestEntity, Long, RevisedTestEntity>(service)
 
     class FakeHistoryService(
         var canned: Page<HistoryEntryDto<RevisedTestEntity>> = PageImpl(emptyList()),
         var cannedAll: Page<EntityHistoryEntryDto<RevisedTestEntity, Long>> = PageImpl(emptyList()),
-    ) : EnversHistoryService<RevisedTestEntity, Long>(
+    ) : EnversHistoryService<RevisedTestEntity, Long, RevisedTestEntity>(
             RevisedTestEntity::class.java,
             mock(EntityManager::class.java),
-            ActorEnrichmentService(mock(ActorNameLookup::class.java)),
+            ActorDisplayResolver(mock(ActorNameLookup::class.java), ActorDisplayProperties()),
         ) {
         var lastId: Long? = null
         var lastPageable: Pageable? = null

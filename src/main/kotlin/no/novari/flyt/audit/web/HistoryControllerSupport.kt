@@ -28,8 +28,8 @@ import org.springframework.web.bind.annotation.PathVariable
  * (f.eks. ved å montere kontrolleren under et internt path-prefix som allerede er
  * autentisert i infrastrukturen) eller via Spring Security.
  */
-abstract class HistoryControllerSupport<T : Any, ID : Any>(
-    private val historyService: EnversHistoryService<T, ID>,
+abstract class HistoryControllerSupport<T : Any, ID : Any, S : Any>(
+    private val historyService: EnversHistoryService<T, ID, S>,
 ) {
     @GetMapping("/{id}/history")
     fun history(
@@ -37,12 +37,12 @@ abstract class HistoryControllerSupport<T : Any, ID : Any>(
         @PageableDefault(size = 20)
         pageable: Pageable,
         filter: HistoryFilter,
-    ): HistoryPageDto<T> = HistoryPageDto.from(historyService.findHistory(id, pageable, filter))
+    ): HistoryPageDto<S> = HistoryPageDto.from(historyService.findHistory(id, pageable, filter))
 
     @GetMapping("/history")
     fun allHistory(
         @PageableDefault(size = 20)
         pageable: Pageable,
         filter: HistoryFilter,
-    ): EntityHistoryPageDto<T, ID> = EntityHistoryPageDto.from(historyService.findAllHistory(pageable, filter))
+    ): EntityHistoryPageDto<S, ID> = EntityHistoryPageDto.from(historyService.findAllHistory(pageable, filter))
 }

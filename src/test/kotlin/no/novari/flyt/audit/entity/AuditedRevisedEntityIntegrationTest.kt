@@ -1,7 +1,8 @@
 package no.novari.flyt.audit.entity
 
 import jakarta.persistence.EntityManager
-import no.novari.flyt.audit.actor.ActorEnrichmentService
+import no.novari.flyt.audit.actor.ActorDisplayProperties
+import no.novari.flyt.audit.actor.ActorDisplayResolver
 import no.novari.flyt.audit.actor.HttpActorNameLookup
 import no.novari.flyt.audit.authorization.AuthorizationClient
 import no.novari.flyt.audit.authorization.AuthorizedUserDto
@@ -67,7 +68,7 @@ class AuditedRevisedEntityIntegrationTest {
             override fun lookupUsers(oids: List<UUID>) = oids.map { AuthorizedUserDto(it, "Test Bruker") }
         }
 
-    private lateinit var historyService: EnversHistoryService<AuditedRevisedTestEntity, Long>
+    private lateinit var historyService: EnversHistoryService<AuditedRevisedTestEntity, Long, AuditedRevisedTestEntity>
 
     @BeforeEach
     fun setUp() {
@@ -76,10 +77,10 @@ class AuditedRevisedEntityIntegrationTest {
         jdbcTemplate.execute("DELETE FROM audited_revised_test_entity")
 
         historyService =
-            object : EnversHistoryService<AuditedRevisedTestEntity, Long>(
+            object : EnversHistoryService<AuditedRevisedTestEntity, Long, AuditedRevisedTestEntity>(
                 AuditedRevisedTestEntity::class.java,
                 entityManager,
-                ActorEnrichmentService(HttpActorNameLookup(fakeClient)),
+                ActorDisplayResolver(HttpActorNameLookup(fakeClient), ActorDisplayProperties()),
             ) {}
     }
 
