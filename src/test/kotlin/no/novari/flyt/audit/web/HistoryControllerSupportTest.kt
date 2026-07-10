@@ -5,6 +5,7 @@ import no.novari.flyt.audit.actor.Actor
 import no.novari.flyt.audit.actor.ActorDisplayProperties
 import no.novari.flyt.audit.actor.ActorDisplayResolver
 import no.novari.flyt.audit.actor.ActorNameLookup
+import no.novari.flyt.audit.history.AuditPropertyFilter
 import no.novari.flyt.audit.history.EntityHistoryEntryDto
 import no.novari.flyt.audit.history.EnversHistoryService
 import no.novari.flyt.audit.history.HistoryEntryDto
@@ -23,6 +24,9 @@ import org.springframework.data.domain.Page
 import org.springframework.data.domain.PageImpl
 import org.springframework.data.domain.PageRequest
 import org.springframework.data.domain.Pageable
+import org.springframework.security.access.AccessDeniedException
+import org.springframework.security.authentication.TestingAuthenticationToken
+import org.springframework.security.core.Authentication
 import org.springframework.test.web.servlet.MockMvc
 import org.springframework.test.web.servlet.get
 import org.springframework.web.bind.annotation.RequestMapping
@@ -38,7 +42,27 @@ class HistoryControllerSupportTest {
     @RequestMapping("/test-entities")
     class TestHistoryController(
         service: EnversHistoryService<RevisedTestEntity, Long, RevisedTestEntity>,
-    ) : HistoryControllerSupport<RevisedTestEntity, Long, RevisedTestEntity>(service)
+    ) : HistoryControllerSupport<RevisedTestEntity, Long, RevisedTestEntity>(service) {
+        var denyAccessToId: Long? = null
+        var filterToReturn: AuditPropertyFilter? = null
+        var lastCheckAccessId: Long? = null
+        var lastAdditionalFilterCalled = false
+
+        override fun checkAccess(
+            authentication: Authentication,
+            id: Long,
+        ) {
+            lastCheckAccessId = id
+            if (id == denyAccessToId) {
+                throw AccessDeniedException("no access to $id")
+            }
+        }
+
+        override fun additionalFilter(authentication: Authentication): AuditPropertyFilter? {
+            lastAdditionalFilterCalled = true
+            return filterToReturn
+        }
+    }
 
     class FakeHistoryService(
         var canned: Page<HistoryEntryDto<RevisedTestEntity>> = PageImpl(emptyList()),
@@ -53,6 +77,8 @@ class HistoryControllerSupportTest {
         var lastFilter: HistoryFilter? = null
         var lastAllPageable: Pageable? = null
         var lastAllFilter: HistoryFilter? = null
+        var lastPropertyFilter: AuditPropertyFilter? = null
+        var findHistoryCalled = false
 
         override fun mapSnapshot(entity: RevisedTestEntity) = entity
 
@@ -61,6 +87,7 @@ class HistoryControllerSupportTest {
             pageable: Pageable,
             filter: HistoryFilter,
         ): Page<HistoryEntryDto<RevisedTestEntity>> {
+            findHistoryCalled = true
             lastId = id
             lastPageable = pageable
             lastFilter = filter
@@ -70,9 +97,11 @@ class HistoryControllerSupportTest {
         override fun findAllHistory(
             pageable: Pageable,
             filter: HistoryFilter,
+            propertyFilter: AuditPropertyFilter?,
         ): Page<EntityHistoryEntryDto<RevisedTestEntity, Long>> {
             lastAllPageable = pageable
             lastAllFilter = filter
+            lastPropertyFilter = propertyFilter
             return cannedAll
         }
     }
@@ -90,6 +119,17 @@ class HistoryControllerSupportTest {
 
     @Autowired
     lateinit var fakeHistoryService: FakeHistoryService
+
+    @Autowired
+    lateinit var testHistoryController: TestHistoryController
+
+    private val testAuthentication = TestingAuthenticationToken("user", null)
+
+    @org.junit.jupiter.api.BeforeEach
+    fun resetControllerState() {
+        testHistoryController.denyAccessToId = null
+        testHistoryController.filterToReturn = null
+    }
 
     @Test
     fun `history-endepunkt mapper id og returnerer innhold`() {
@@ -110,8 +150,9 @@ class HistoryControllerSupportTest {
             )
 
         mockMvc
-            .get("/test-entities/42/history")
-            .andExpect {
+            .get("/test-entities/42/history") {
+                principal = testAuthentication
+            }.andExpect {
                 status { isOk() }
                 jsonPath("$.content[0].type") { value("UPDATED") }
                 jsonPath("$.content[0].actorDisplay") { value("Ola Nordmann") }
@@ -129,7 +170,10 @@ class HistoryControllerSupportTest {
 
     @Test
     fun `pageable-default settes når ingen parametere er gitt`() {
-        mockMvc.get("/test-entities/1/history").andExpect { status { isOk() } }
+        mockMvc
+            .get("/test-entities/1/history") {
+                principal = testAuthentication
+            }.andExpect { status { isOk() } }
 
         val pageable = fakeHistoryService.lastPageable!!
         assertThat(pageable.pageSize).isEqualTo(20)
@@ -140,6 +184,7 @@ class HistoryControllerSupportTest {
     fun `from- og to-parametere bindes til filteret`() {
         mockMvc
             .get("/test-entities/1/history") {
+                principal = testAuthentication
                 param("from", "2026-06-01T00:00:00Z")
                 param("to", "2026-06-30T00:00:00Z")
             }.andExpect { status { isOk() } }
@@ -151,7 +196,10 @@ class HistoryControllerSupportTest {
 
     @Test
     fun `tomt filter når ingen tidsparametere er gitt`() {
-        mockMvc.get("/test-entities/1/history").andExpect { status { isOk() } }
+        mockMvc
+            .get("/test-entities/1/history") {
+                principal = testAuthentication
+            }.andExpect { status { isOk() } }
 
         val filter = fakeHistoryService.lastFilter!!
         assertThat(filter.from).isNull()
@@ -178,8 +226,9 @@ class HistoryControllerSupportTest {
             )
 
         mockMvc
-            .get("/test-entities/history")
-            .andExpect {
+            .get("/test-entities/history") {
+                principal = testAuthentication
+            }.andExpect {
                 status { isOk() }
                 jsonPath("$.content[0].entityId") { value(7) }
                 jsonPath("$.content[0].type") { value("CREATED") }
@@ -198,7 +247,10 @@ class HistoryControllerSupportTest {
 
     @Test
     fun `allHistory pageable-default settes når ingen parametere er gitt`() {
-        mockMvc.get("/test-entities/history").andExpect { status { isOk() } }
+        mockMvc
+            .get("/test-entities/history") {
+                principal = testAuthentication
+            }.andExpect { status { isOk() } }
 
         val pageable = fakeHistoryService.lastAllPageable!!
         assertThat(pageable.pageSize).isEqualTo(20)
@@ -209,6 +261,7 @@ class HistoryControllerSupportTest {
     fun `allHistory from- og to-parametere bindes til filteret`() {
         mockMvc
             .get("/test-entities/history") {
+                principal = testAuthentication
                 param("from", "2026-06-01T00:00:00Z")
                 param("to", "2026-06-30T00:00:00Z")
             }.andExpect { status { isOk() } }
@@ -216,5 +269,54 @@ class HistoryControllerSupportTest {
         val filter = fakeHistoryService.lastAllFilter!!
         assertThat(filter.from).isEqualTo(Instant.parse("2026-06-01T00:00:00Z"))
         assertThat(filter.to).isEqualTo(Instant.parse("2026-06-30T00:00:00Z"))
+    }
+
+    @Test
+    fun `checkAccess kalles med id før findHistory`() {
+        mockMvc
+            .get("/test-entities/42/history") {
+                principal = testAuthentication
+            }.andExpect { status { isOk() } }
+
+        assertThat(testHistoryController.lastCheckAccessId).isEqualTo(42L)
+        assertThat(fakeHistoryService.findHistoryCalled).isTrue()
+    }
+
+    @Test
+    fun `checkAccess som kaster forhindrer at findHistory kalles`() {
+        testHistoryController.denyAccessToId = 99L
+        fakeHistoryService.findHistoryCalled = false
+
+        org.junit.jupiter.api.assertThrows<Exception> {
+            mockMvc.get("/test-entities/99/history") {
+                principal = testAuthentication
+            }
+        }
+
+        assertThat(fakeHistoryService.findHistoryCalled).isFalse()
+    }
+
+    @Test
+    fun `additionalFilter sitt resultat videreføres til findAllHistory`() {
+        val propertyFilter = AuditPropertyFilter(property = "eierId", allowedValues = listOf(1L, 2L))
+        testHistoryController.filterToReturn = propertyFilter
+
+        mockMvc
+            .get("/test-entities/history") {
+                principal = testAuthentication
+            }.andExpect { status { isOk() } }
+
+        assertThat(testHistoryController.lastAdditionalFilterCalled).isTrue()
+        assertThat(fakeHistoryService.lastPropertyFilter).isEqualTo(propertyFilter)
+    }
+
+    @Test
+    fun `additionalFilter er null som standard`() {
+        mockMvc
+            .get("/test-entities/history") {
+                principal = testAuthentication
+            }.andExpect { status { isOk() } }
+
+        assertThat(fakeHistoryService.lastPropertyFilter).isNull()
     }
 }

@@ -242,6 +242,29 @@ class EnversHistoryServiceIntegrationTest {
         assertThat(page.content.single().actor).isEqualTo(Actor.User(userOid))
     }
 
+    @Test
+    fun `findAllHistory med propertyFilter begrenser til matchende entiteter`() {
+        setJwtWithOid(userOid)
+        val a = entityRepository.saveAndFlush(RevisedTestEntity().apply { name = "keep" })
+        entityRepository.saveAndFlush(RevisedTestEntity().apply { name = "exclude" })
+
+        val page = findAllHistory(PageRequest.of(0, 20), propertyFilter = AuditPropertyFilter("name", listOf("keep")))
+
+        assertThat(page.totalElements).isEqualTo(1)
+        assertThat(page.content.single().entityId).isEqualTo(a.id)
+    }
+
+    @Test
+    fun `findAllHistory uten propertyFilter returnerer alt (regresjonsvern)`() {
+        setJwtWithOid(userOid)
+        entityRepository.saveAndFlush(RevisedTestEntity().apply { name = "a" })
+        entityRepository.saveAndFlush(RevisedTestEntity().apply { name = "b" })
+
+        val page = findAllHistory(PageRequest.of(0, 20), propertyFilter = null)
+
+        assertThat(page.totalElements).isEqualTo(2)
+    }
+
     private fun findHistory(
         id: Long,
         pageable: PageRequest,
@@ -253,8 +276,9 @@ class EnversHistoryServiceIntegrationTest {
     private fun findAllHistory(
         pageable: PageRequest,
         filter: HistoryFilter = HistoryFilter(),
+        propertyFilter: AuditPropertyFilter? = null,
     ) = transactionTemplate.execute {
-        historyService.findAllHistory(pageable, filter)
+        historyService.findAllHistory(pageable, filter, propertyFilter)
     }!!
 
     private fun setJwtWithOid(oid: UUID) {
