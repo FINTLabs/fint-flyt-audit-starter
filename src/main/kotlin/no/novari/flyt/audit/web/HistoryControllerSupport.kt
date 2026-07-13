@@ -42,6 +42,10 @@ import org.springframework.web.bind.annotation.PathVariable
  *   felt på entiteten (f.eks. kildeapplikasjons-ID). `null` som standard — **et uoverstyrt
  *   `/history`-endepunkt eksponerer da endringshistorikk for samtlige rader, på tvers av
  *   eventuelle tenant-grenser.** Tjenester med tenant-scopede entiteter må overstyre denne.
+ *
+ * **Forutsetning — autentisert request:** endepunktene tar `Authentication` som non-null
+ * parameter og forutsetter dermed at requesten er autentisert med en Spring Security-principal.
+ * Det er oppfylt så lenge kontrolleren monteres bak tjenestens resource-server (over).
  */
 abstract class HistoryControllerSupport<T : Any, ID : Any, S : Any>(
     private val historyService: EnversHistoryService<T, ID, S>,

@@ -8,6 +8,9 @@ package no.novari.flyt.audit.history
  * [no.novari.flyt.audit.web.HistoryControllerSupport.additionalFilter] — f.eks. en tjeneste der
  * entiteten tilhører en kildeapplikasjon kan begrense listen til kildeapplikasjonene den
  * innloggede brukeren har tilgang til.
+ *
+ * Tom [allowedValues] betyr «tilgang til ingen tenants» og gir en tom resultatside
+ * ([EnversHistoryService.findAllHistory] kortslutter da uten å treffe databasen).
  */
 data class AuditPropertyFilter(
     val property: String,

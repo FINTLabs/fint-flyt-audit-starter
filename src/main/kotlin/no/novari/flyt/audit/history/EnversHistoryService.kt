@@ -100,6 +100,10 @@ abstract class EnversHistoryService<T : Any, ID : Any, S : Any>(
         filter: HistoryFilter = HistoryFilter(),
         propertyFilter: AuditPropertyFilter? = null,
     ): Page<EntityHistoryEntryDto<S, ID>> {
+        if (propertyFilter != null && propertyFilter.allowedValues.isEmpty()) {
+            return PageImpl(emptyList(), pageable, 0)
+        }
+
         val reader = AuditReaderFactory.get(entityManager)
 
         val query =

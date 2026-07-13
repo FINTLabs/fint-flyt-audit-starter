@@ -142,7 +142,9 @@ class TingHistoryController(
 }
 ```
 
-`checkAccess` er no-op og `additionalFilter` returnerer `null` som standard — **et uoverstyrt `/history`-endepunkt eksponerer da endringshistorikk for samtlige rader, på tvers av eventuelle tenant-grenser.** Tjenester med tenant-scopede entiteter må aktivt overstyre `additionalFilter`. `AuditPropertyFilter.property` må matche et feltnavn på den auditerte entiteten (kolonnen finnes da i `_aud`-tabellen); filteret slås sammen med `from`/`to` og evaluares av Hibernate Envers (`AuditEntity.property(...).in(...)`).
+`checkAccess` er no-op og `additionalFilter` returnerer `null` som standard — **et uoverstyrt `/history`-endepunkt eksponerer da endringshistorikk for samtlige rader, på tvers av eventuelle tenant-grenser.** Tjenester med tenant-scopede entiteter må aktivt overstyre `additionalFilter`. `AuditPropertyFilter.property` må matche et feltnavn på den auditerte entiteten (kolonnen finnes da i `_aud`-tabellen); filteret slås sammen med `from`/`to` og evaluares av Hibernate Envers (`AuditEntity.property(...).in(...)`). Er `allowedValues` tom (brukeren har tilgang til ingen tenants), returneres en tom side (`totalElements = 0`) uten å treffe databasen.
+
+**Slettinger og `store_data_at_delete`:** Envers lagrer som standard kun `id` i DEL-rader, slik at et tenant-felt som `fromApplicationId` blir `null` i slette-revisjonen og ville falt ut av et property-filtrert `/history`-oppslag — slettinger ville da manglet i den tenant-scopede lista. Starteren aktiverer derfor `org.hibernate.envers.store_data_at_delete=true` automatisk (via en `HibernatePropertiesCustomizer`), slik at DEL-rader beholder tenant-feltet og korrekt inkluderes. `snapshot` er fortsatt `null` for slettede revisjoner. Overstyr ved behov med `spring.jpa.properties.org.hibernate.envers.store_data_at_delete=false`.
 
 ## Hydrering av `createdBy` / `lastModifiedBy` i REST-DTOer
 
