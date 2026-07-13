@@ -110,9 +110,41 @@ CREATE TABLE my_entity_aud (
 
 Legg til `spring.jpa.hibernate.ddl-auto: validate` i produksjonskonfigurasjon.
 
-**Historikk-endepunktet** (`GET /{id}/history`) støtter `page`, `size` og `from`/`to`-filtrering. Sortering er fast: nyeste revisjon returneres alltid først og kan ikke overstyres via request-parametere.
+**Historikk-endepunktene** (`GET /{id}/history` og `GET /history`) støtter `page`, `size` og `from`/`to`-filtrering. Sortering er fast: nyeste revisjon returneres alltid først og kan ikke overstyres via request-parametere.
 
-> **Tilgangskontroll:** starteren legger ingen autentisering eller autorisasjon på historikk-endepunktet. Konsumenten er ansvarlig for å sikre det — typisk ved å montere kontrolleren under et internt path-prefix som er autentisert i NAM (f.eks. `no.novari.flyt.webresourceserver.UrlPaths.INTERNAL_API`), eller via Spring Security-konfigurasjon.
+> **Tilgangskontroll:** starteren legger ingen autentisering eller autorisasjon på historikk-endepunktene i seg selv. Konsumenten er ansvarlig for å sikre dem — typisk ved å montere kontrolleren under et internt path-prefix som sikres av tjenestens egen resource-server (`no.novari:flyt-web-resource-server`), f.eks. `no.novari.flyt.webresourceserver.UrlPaths.INTERNAL_API` (som krever gyldig bruker-JWT + `USER`-rolle), eller via egen Spring Security-konfigurasjon.
+
+### Autorisasjon per entitet/tenant
+
+Er entiteten scopet til en bruker eller tenant (f.eks. en kildeapplikasjons-ID), holder ikke path-prefix-autentisering alene — `HistoryControllerSupport` gir to overstyrbare hooks for dette:
+
+```kotlin
+@RestController
+@RequestMapping("/api/intern/min-tjeneste/ting")
+class TingHistoryController(
+    private val tingRepository: TingRepository,
+    private val userAuthorizationService: UserAuthorizationService,
+    historyService: TingHistoryService,
+) : HistoryControllerSupport<Ting, Long, TingView>(historyService) {
+
+    // Kalles før GET /{id}/history returnerer data. Kast for å nekte tilgang.
+    override fun checkAccess(authentication: Authentication, id: Long) {
+        val ting = tingRepository.findById(id).orElseThrow { TingNotFoundException(id) }
+        userAuthorizationService.checkIfUserHasAccessToSourceApplication(authentication, ting.eierId)
+    }
+
+    // Kalles før GET /history (all-tenant-listen) returnerer data.
+    override fun additionalFilter(authentication: Authentication): AuditPropertyFilter =
+        AuditPropertyFilter(
+            property = "eierId",
+            allowedValues = userAuthorizationService.getUserAuthorizedSourceApplicationIds(authentication),
+        )
+}
+```
+
+`checkAccess` er no-op og `additionalFilter` returnerer `null` som standard — **et uoverstyrt `/history`-endepunkt eksponerer da endringshistorikk for samtlige rader, på tvers av eventuelle tenant-grenser.** Tjenester med tenant-scopede entiteter må aktivt overstyre `additionalFilter`. `AuditPropertyFilter.property` må matche et feltnavn på den auditerte entiteten (kolonnen finnes da i `_aud`-tabellen); filteret slås sammen med `from`/`to` og evaluares av Hibernate Envers (`AuditEntity.property(...).in(...)`). Er `allowedValues` tom (brukeren har tilgang til ingen tenants), returneres en tom side (`totalElements = 0`) uten å treffe databasen.
+
+**Slettinger og `store_data_at_delete`:** Envers lagrer som standard kun `id` i DEL-rader, slik at et tenant-felt som `fromApplicationId` blir `null` i slette-revisjonen og ville falt ut av et property-filtrert `/history`-oppslag — slettinger ville da manglet i den tenant-scopede lista. Starteren aktiverer derfor `org.hibernate.envers.store_data_at_delete=true` automatisk (via en `HibernatePropertiesCustomizer`), slik at DEL-rader beholder tenant-feltet og korrekt inkluderes. `snapshot` er fortsatt `null` for slettede revisjoner. Overstyr ved behov med `spring.jpa.properties.org.hibernate.envers.store_data_at_delete=false`.
 
 ## Hydrering av `createdBy` / `lastModifiedBy` i REST-DTOer
 

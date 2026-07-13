@@ -16,4 +16,6 @@ class RevisedTestEntity {
     var id: Long? = null
 
     var name: String = ""
+
+    var tenantId: Long? = null
 }

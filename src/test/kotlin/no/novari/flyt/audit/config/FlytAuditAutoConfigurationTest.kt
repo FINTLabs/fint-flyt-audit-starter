@@ -10,7 +10,9 @@ import no.novari.flyt.audit.metrics.AuditMetrics
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Test
 import org.mockito.Mockito.mock
+import org.springframework.beans.factory.getBean
 import org.springframework.boot.autoconfigure.AutoConfigurations
+import org.springframework.boot.autoconfigure.orm.jpa.HibernatePropertiesCustomizer
 import org.springframework.boot.test.context.runner.ApplicationContextRunner
 import org.springframework.context.annotation.Bean
 import org.springframework.context.annotation.Configuration
@@ -79,6 +81,26 @@ class FlytAuditAutoConfigurationTest {
             ).run { context ->
                 assertThat(context).hasSingleBean(ActorDisplayResolver::class.java)
             }
+    }
+
+    @Test
+    fun `store_data_at_delete settes til true av HibernatePropertiesCustomizer`() {
+        contextRunner.run { context ->
+            val customizer = context.getBean<HibernatePropertiesCustomizer>()
+            val properties = mutableMapOf<String, Any>()
+            customizer.customize(properties)
+            assertThat(properties["org.hibernate.envers.store_data_at_delete"]).isEqualTo("true")
+        }
+    }
+
+    @Test
+    fun `store_data_at_delete overstyres ikke når konsumenten allerede har satt den`() {
+        contextRunner.run { context ->
+            val customizer = context.getBean<HibernatePropertiesCustomizer>()
+            val properties = mutableMapOf<String, Any>("org.hibernate.envers.store_data_at_delete" to "false")
+            customizer.customize(properties)
+            assertThat(properties["org.hibernate.envers.store_data_at_delete"]).isEqualTo("false")
+        }
     }
 
     @Configuration

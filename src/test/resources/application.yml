@@ -4,6 +4,7 @@ spring:
       ddl-auto: create
     properties:
       hibernate.format_sql: true
+      org.hibernate.envers.store_data_at_delete: true
   flyway:
     enabled: false
 logging:

@@ -98,7 +98,12 @@ abstract class EnversHistoryService<T : Any, ID : Any, S : Any>(
     open fun findAllHistory(
         pageable: Pageable,
         filter: HistoryFilter = HistoryFilter(),
+        propertyFilter: AuditPropertyFilter? = null,
     ): Page<EntityHistoryEntryDto<S, ID>> {
+        if (propertyFilter != null && propertyFilter.allowedValues.isEmpty()) {
+            return PageImpl(emptyList(), pageable, 0)
+        }
+
         val reader = AuditReaderFactory.get(entityManager)
 
         val query =
@@ -111,6 +116,9 @@ abstract class EnversHistoryService<T : Any, ID : Any, S : Any>(
         }
         filter.to?.let {
             query.add(AuditEntity.revisionProperty("revtstmp").lt(it.toEpochMilli()))
+        }
+        propertyFilter?.let {
+            query.add(AuditEntity.property(it.property).`in`(it.allowedValues))
         }
 
         query
@@ -141,7 +149,7 @@ abstract class EnversHistoryService<T : Any, ID : Any, S : Any>(
                 )
             }
 
-        return PageImpl(content, pageable, countAllRevisions(filter))
+        return PageImpl(content, pageable, countAllRevisions(filter, propertyFilter))
     }
 
     // Envers returnerer et delvis utfylt objekt (kun id) for DEL-revisjoner;
@@ -179,7 +187,10 @@ abstract class EnversHistoryService<T : Any, ID : Any, S : Any>(
         return query.singleResult as Long
     }
 
-    private fun countAllRevisions(filter: HistoryFilter): Long {
+    private fun countAllRevisions(
+        filter: HistoryFilter,
+        propertyFilter: AuditPropertyFilter?,
+    ): Long {
         val reader = AuditReaderFactory.get(entityManager)
 
         val query =
@@ -193,6 +204,9 @@ abstract class EnversHistoryService<T : Any, ID : Any, S : Any>(
         }
         filter.to?.let {
             query.add(AuditEntity.revisionProperty("revtstmp").lt(it.toEpochMilli()))
+        }
+        propertyFilter?.let {
+            query.add(AuditEntity.property(it.property).`in`(it.allowedValues))
         }
 
         return query.singleResult as Long

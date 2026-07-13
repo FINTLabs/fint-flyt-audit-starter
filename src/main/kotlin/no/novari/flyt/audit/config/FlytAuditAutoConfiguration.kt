@@ -18,6 +18,7 @@ import org.springframework.boot.autoconfigure.AutoConfigureAfter
 import org.springframework.boot.autoconfigure.condition.ConditionalOnBean
 import org.springframework.boot.autoconfigure.condition.ConditionalOnClass
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean
+import org.springframework.boot.autoconfigure.orm.jpa.HibernatePropertiesCustomizer
 import org.springframework.boot.context.properties.EnableConfigurationProperties
 import org.springframework.context.annotation.Bean
 import org.springframework.data.domain.AuditorAware
@@ -70,6 +71,19 @@ class FlytAuditAutoConfiguration {
     @ConditionalOnBean(MeterRegistry::class)
     @ConditionalOnMissingBean
     fun auditMetrics(registry: MeterRegistry) = AuditMetrics(registry)
+
+    /**
+     * Uten `store_data_at_delete` lagrer Envers kun `id` i DEL-rader; tenant-felt blir da `null`
+     * og faller ut av property-filtrerte historikk-oppslag ([EnversHistoryService.findAllHistory]
+     * med [no.novari.flyt.audit.history.AuditPropertyFilter]) — slettinger ville manglet i
+     * tenant-scopet `/history`. `putIfAbsent` lar konsumenten overstyre via
+     * `spring.jpa.properties.org.hibernate.envers.store_data_at_delete`.
+     */
+    @Bean
+    fun enversStoreDataAtDeleteCustomizer() =
+        HibernatePropertiesCustomizer { properties ->
+            properties.putIfAbsent("org.hibernate.envers.store_data_at_delete", "true")
+        }
 
     private companion object {
         val logger = LoggerFactory.getLogger(FlytAuditAutoConfiguration::class.java)

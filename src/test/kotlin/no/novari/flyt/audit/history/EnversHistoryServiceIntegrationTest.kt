@@ -242,6 +242,70 @@ class EnversHistoryServiceIntegrationTest {
         assertThat(page.content.single().actor).isEqualTo(Actor.User(userOid))
     }
 
+    @Test
+    fun `findAllHistory med propertyFilter begrenser til matchende entiteter`() {
+        setJwtWithOid(userOid)
+        val a = entityRepository.saveAndFlush(RevisedTestEntity().apply { name = "keep" })
+        entityRepository.saveAndFlush(RevisedTestEntity().apply { name = "exclude" })
+
+        val page = findAllHistory(PageRequest.of(0, 20), propertyFilter = AuditPropertyFilter("name", listOf("keep")))
+
+        assertThat(page.totalElements).isEqualTo(1)
+        assertThat(page.content.single().entityId).isEqualTo(a.id)
+    }
+
+    @Test
+    fun `findAllHistory uten propertyFilter returnerer alt (regresjonsvern)`() {
+        setJwtWithOid(userOid)
+        entityRepository.saveAndFlush(RevisedTestEntity().apply { name = "a" })
+        entityRepository.saveAndFlush(RevisedTestEntity().apply { name = "b" })
+
+        val page = findAllHistory(PageRequest.of(0, 20), propertyFilter = null)
+
+        assertThat(page.totalElements).isEqualTo(2)
+    }
+
+    @Test
+    fun `findAllHistory med propertyFilter inkluderer slette-revisjon (store_data_at_delete)`() {
+        setJwtWithOid(userOid)
+        val saved =
+            entityRepository.saveAndFlush(
+                RevisedTestEntity().apply {
+                    name = "v1"
+                    tenantId = 1L
+                },
+            )
+        val id = saved.id!!
+        saved.name = "v2"
+        entityRepository.saveAndFlush(saved)
+        entityRepository.delete(saved)
+        entityRepository.flush()
+
+        val page = findAllHistory(PageRequest.of(0, 20), propertyFilter = AuditPropertyFilter("tenantId", listOf(1L)))
+
+        val entries = page.content.filter { it.entityId == id }
+        assertThat(entries.map { it.type })
+            .containsExactly(HistoryEventType.DELETED, HistoryEventType.UPDATED, HistoryEventType.CREATED)
+        val deleted = entries.first { it.type == HistoryEventType.DELETED }
+        assertThat(deleted.snapshot).isNull()
+    }
+
+    @Test
+    fun `findAllHistory med tom allowedValues gir tom side uten å treffe databasen`() {
+        setJwtWithOid(userOid)
+        entityRepository.saveAndFlush(
+            RevisedTestEntity().apply {
+                name = "a"
+                tenantId = 1L
+            },
+        )
+
+        val page = findAllHistory(PageRequest.of(0, 20), propertyFilter = AuditPropertyFilter("tenantId", emptyList()))
+
+        assertThat(page.totalElements).isZero()
+        assertThat(page.content).isEmpty()
+    }
+
     private fun findHistory(
         id: Long,
         pageable: PageRequest,
@@ -253,8 +317,9 @@ class EnversHistoryServiceIntegrationTest {
     private fun findAllHistory(
         pageable: PageRequest,
         filter: HistoryFilter = HistoryFilter(),
+        propertyFilter: AuditPropertyFilter? = null,
     ) = transactionTemplate.execute {
-        historyService.findAllHistory(pageable, filter)
+        historyService.findAllHistory(pageable, filter, propertyFilter)
     }!!
 
     private fun setJwtWithOid(oid: UUID) {
