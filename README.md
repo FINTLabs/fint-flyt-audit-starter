@@ -112,7 +112,7 @@ Legg til `spring.jpa.hibernate.ddl-auto: validate` i produksjonskonfigurasjon.
 
 **Historikk-endepunktene** (`GET /{id}/history` og `GET /history`) støtter `page`, `size` og `from`/`to`-filtrering. Sortering er fast: nyeste revisjon returneres alltid først og kan ikke overstyres via request-parametere.
 
-> **Tilgangskontroll:** starteren legger ingen autentisering eller autorisasjon på historikk-endepunktene i seg selv. Konsumenten er ansvarlig for å sikre dem — typisk ved å montere kontrolleren under et internt path-prefix som er autentisert i NAM (f.eks. `no.novari.flyt.webresourceserver.UrlPaths.INTERNAL_API`), eller via Spring Security-konfigurasjon.
+> **Tilgangskontroll:** starteren legger ingen autentisering eller autorisasjon på historikk-endepunktene i seg selv. Konsumenten er ansvarlig for å sikre dem — typisk ved å montere kontrolleren under et internt path-prefix som sikres av tjenestens egen resource-server (`no.novari:flyt-web-resource-server`), f.eks. `no.novari.flyt.webresourceserver.UrlPaths.INTERNAL_API` (som krever gyldig bruker-JWT + `USER`-rolle), eller via egen Spring Security-konfigurasjon.
 
 ### Autorisasjon per entitet/tenant
 

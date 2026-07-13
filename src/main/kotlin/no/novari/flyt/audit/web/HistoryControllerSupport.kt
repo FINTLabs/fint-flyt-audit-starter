@@ -29,10 +29,11 @@ import org.springframework.web.bind.annotation.PathVariable
  * først; sortering kan ikke overstyres via request-parametere.
  *
  * **Tilgangskontroll:** starteren legger ingen autentiserings- eller autorisasjonsgating
- * på endepunktene i seg selv. Konsumenten er ansvarlig for å sikre dem — typisk via reverse
- * proxy (f.eks. ved å montere kontrolleren under et internt path-prefix som allerede er
- * autentisert i infrastrukturen) eller via Spring Security, **og** via de to hookene under
- * dersom entiteten er scopet per bruker/tenant (f.eks. en kildeapplikasjon):
+ * på endepunktene i seg selv. Konsumenten er ansvarlig for å sikre dem — typisk ved å montere
+ * kontrolleren under et internt path-prefix som sikres av tjenestens egen resource-server
+ * (`no.novari:flyt-web-resource-server`, f.eks. `UrlPaths.INTERNAL_API`) eller egen Spring
+ * Security-konfig, **og** via de to hookene under dersom entiteten er scopet per bruker/tenant
+ * (f.eks. en kildeapplikasjon):
  *
  * - [checkAccess] kalles før `/{id}/history` returnerer data. Kast en exception (f.eks. et
  *   403-mappet unntak) for å nekte tilgang til en gitt `id`. No-op som standard.
