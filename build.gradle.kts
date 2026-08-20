@@ -17,6 +17,9 @@ plugins {
 
 private val kotlinVersion = "2.4.0"
 extra["kotlin.version"] = kotlinVersion
+extra["jackson-bom.version"] = "2.21.5"
+extra["log4j2.version"] = "2.25.5"
+extra["postgresql.version"] = "42.7.12"
 
 group = "no.novari"
 version = findProperty("version")?.toString() ?: "1.0-SNAPSHOT"
