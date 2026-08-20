@@ -46,6 +46,12 @@ dependencyManagement {
 }
 
 dependencies {
+    constraints {
+        testImplementation("org.apache.commons:commons-compress:1.26.0") {
+            because("Fixes CVE-2024-25710 and CVE-2024-26308 in the Testcontainers transitive dependency")
+        }
+    }
+
     implementation(kotlin("stdlib"))
     implementation(kotlin("reflect"))
 
