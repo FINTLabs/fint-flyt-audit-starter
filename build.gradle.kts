@@ -15,7 +15,7 @@ plugins {
     kotlin("kapt") version "2.4.10"
 }
 
-private val kotlinVersion = "2.4.0"
+private val kotlinVersion = "2.4.10"
 extra["kotlin.version"] = kotlinVersion
 extra["jackson-bom.version"] = "2.21.5"
 extra["log4j2.version"] = "2.25.5"
