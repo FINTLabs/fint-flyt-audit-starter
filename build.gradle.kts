@@ -9,10 +9,10 @@ plugins {
     id("java-library")
     id("com.github.ben-manes.versions") version "0.61.0"
     id("org.jlleitschuh.gradle.ktlint") version "14.2.0"
-    kotlin("jvm") version "2.4.0"
-    kotlin("plugin.spring") version "2.4.0"
-    kotlin("plugin.jpa") version "2.4.0"
-    kotlin("kapt") version "2.4.0"
+    kotlin("jvm") version "2.4.10"
+    kotlin("plugin.spring") version "2.4.10"
+    kotlin("plugin.jpa") version "2.4.10"
+    kotlin("kapt") version "2.4.10"
 }
 
 private val kotlinVersion = "2.4.0"
@@ -51,7 +51,7 @@ dependencies {
     api("org.springframework.boot:spring-boot-starter-web")
     api("org.springframework.boot:spring-boot-starter-actuator")
     api("org.hibernate.orm:hibernate-envers")
-    api("io.hypersistence:hypersistence-utils-hibernate-63:3.11.0")
+    api("io.hypersistence:hypersistence-utils-hibernate-63:3.15.4")
     api("com.fasterxml.jackson.module:jackson-module-kotlin")
     implementation("com.github.ben-manes.caffeine:caffeine")
 
