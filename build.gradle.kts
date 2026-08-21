@@ -15,8 +15,12 @@ plugins {
     kotlin("kapt") version "2.4.10"
 }
 
-private val kotlinVersion = "2.4.0"
+private val kotlinVersion = "2.4.10"
 extra["kotlin.version"] = kotlinVersion
+extra["commons-lang3.version"] = "3.18.0"
+extra["jackson-bom.version"] = "2.21.5"
+extra["log4j2.version"] = "2.25.5"
+extra["postgresql.version"] = "42.7.12"
 
 group = "no.novari"
 version = findProperty("version")?.toString() ?: "1.0-SNAPSHOT"
@@ -43,6 +47,12 @@ dependencyManagement {
 }
 
 dependencies {
+    constraints {
+        testImplementation("org.apache.commons:commons-compress:1.26.0") {
+            because("Fixes CVE-2024-25710 and CVE-2024-26308 in the Testcontainers transitive dependency")
+        }
+    }
+
     implementation(kotlin("stdlib"))
     implementation(kotlin("reflect"))
 
