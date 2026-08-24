@@ -61,7 +61,7 @@ dependencies {
     api("org.springframework.boot:spring-boot-starter-web")
     api("org.springframework.boot:spring-boot-starter-actuator")
     api("org.hibernate.orm:hibernate-envers")
-    api("io.hypersistence:hypersistence-utils-hibernate-63:3.15.4")
+    api("io.hypersistence:hypersistence-utils-hibernate-63:3.15.5")
     api("com.fasterxml.jackson.module:jackson-module-kotlin")
     implementation("com.github.ben-manes.caffeine:caffeine")
 
