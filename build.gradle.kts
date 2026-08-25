@@ -2,6 +2,21 @@ import com.github.benmanes.gradle.versions.updates.DependencyUpdatesTask
 import org.gradle.jvm.toolchain.JavaLanguageVersion
 import org.springframework.boot.gradle.plugin.SpringBootPlugin
 
+buildscript {
+    repositories {
+        gradlePluginPortal()
+    }
+    dependencies {
+        classpath(platform("com.fasterxml.jackson:jackson-bom:2.22.2"))
+        constraints {
+            classpath("org.apache.httpcomponents.client5:httpclient5:5.6.4")
+            classpath("org.apache.httpcomponents.core5:httpcore5:5.4.3")
+            classpath("org.apache.httpcomponents.core5:httpcore5-h2:5.4.3")
+            classpath("org.apache.commons:commons-lang3:3.18.0")
+        }
+    }
+}
+
 plugins {
     id("org.springframework.boot") version "3.5.16" apply false
     id("io.spring.dependency-management") version "1.1.7"
