@@ -20,6 +20,8 @@ class ActorAuditorAware : AuditorAware<Actor> {
     override fun getCurrentAuditor(): Optional<Actor> = Optional.of(resolveActor())
 
     private fun resolveActor(): Actor {
+        ActorContext.currentActor()?.let { return it }
+
         val authentication = SecurityContextHolder.getContext().authentication
         if (authentication == null) {
             logger.debug("Ingen Authentication i SecurityContext — bruker Actor.System")

@@ -6,7 +6,9 @@ Starteren leverer aktør-modell, `@MappedSuperclass`-hierarki, Hibernate Envers-
 ## Innhold
 
 - [`Actor`](src/main/kotlin/no/novari/flyt/audit/actor/Actor.kt) — forseglet interface med subtypene `User`, `System`, `M2M`, `Unknown`. Serialiseres som JSONB.
-- [`ActorAuditorAware`](src/main/kotlin/no/novari/flyt/audit/actor/ActorAuditorAware.kt) — henter aktør fra JWT-sikkerhetskontekst (`objectidentifier` → `User`, `sub` → `M2M`, ingen JWT → `System`).
+- [`ActorAuditorAware`](src/main/kotlin/no/novari/flyt/audit/actor/ActorAuditorAware.kt) — henter aktør fra scoped [`ActorContext`](src/main/kotlin/no/novari/flyt/audit/actor/ActorContext.kt), deretter JWT-sikkerhetskontekst (`objectidentifier` → `User`, `sub` → `M2M`, ingen JWT → `System`).
+- [`ActorContext`](src/main/kotlin/no/novari/flyt/audit/actor/ActorContext.kt) — trådlokal actor-override for avgrenset prosessering på vegne av en bruker.
+- [`ActorHeader`](src/main/kotlin/no/novari/flyt/audit/actor/ActorHeader.kt) — felles kontrakt og codec for actor i record-headeren `flyt.actor`.
 - [`CreatedAuditedEntity`](src/main/kotlin/no/novari/flyt/audit/entity/CreatedAuditedEntity.kt) — `@MappedSuperclass` med `createdAt` og `createdBy` (Variant B).
 - [`AuditedEntity`](src/main/kotlin/no/novari/flyt/audit/entity/AuditedEntity.kt) — utvider `CreatedAuditedEntity` med `lastModifiedAt` og `lastModifiedBy` (Variant C/D/E).
 - [`ActorRevisionEntity`](src/main/kotlin/no/novari/flyt/audit/revision/ActorRevisionEntity.kt) — Envers `@RevisionEntity` med JSONB `actor`-kolonne.
@@ -113,6 +115,37 @@ Legg til `spring.jpa.hibernate.ddl-auto: validate` i produksjonskonfigurasjon.
 **Historikk-endepunktene** (`GET /{id}/history` og `GET /history`) støtter `page`, `size` og `from`/`to`-filtrering. Sortering er fast: nyeste revisjon returneres alltid først og kan ikke overstyres via request-parametere.
 
 > **Tilgangskontroll:** starteren legger ingen autentisering eller autorisasjon på historikk-endepunktene i seg selv. Konsumenten er ansvarlig for å sikre dem — typisk ved å montere kontrolleren under et internt path-prefix som sikres av tjenestens egen resource-server (`no.novari:flyt-web-resource-server`), f.eks. `no.novari.flyt.webresourceserver.UrlPaths.INTERNAL_API` (som krever gyldig bruker-JWT + `USER`-rolle), eller via egen Spring Security-konfigurasjon.
+
+## Scoped aktør i asynkrone konsumenter
+
+Kafka-listenere, schedulere og andre asynkrone prosesser kjører normalt uten Spring Security-kontekst. `ActorAuditorAware` faller da tilbake til `Actor.System`. Når en konsument prosesserer en melding på vegne av en bruker, må aktøren derfor settes eksplisitt og avgrenset rundt akkurat persisteringen som skal auditeres.
+
+Produsenten serialiserer aktøren i record-headeren `flyt.actor`:
+
+```kotlin
+val actor = auditorAware.currentAuditor.orElse(Actor.System)
+val actorHeaderValue = ActorHeader.toHeaderValue(actor)
+```
+
+Konsumenten leser headeren og lagrer innenfor actor-scope:
+
+```kotlin
+val actor =
+    record.headers()
+        .lastHeader(ActorHeader.HEADER_NAME)
+        ?.value()
+        ?.let { ActorHeader.fromHeaderValueOrNull(it) }
+
+if (actor != null) {
+    ActorContext.withActor(actor) {
+        eventRepository.save(event)
+    }
+} else {
+    eventRepository.save(event)
+}
+```
+
+`ActorContext.withActor(...)` bruker `ThreadLocal` og gjenoppretter alltid tidligere aktør når blokken er ferdig, også hvis blokken kaster en exception. Header-verdien bruker samme JSON-kontrakt som `Actor`-JSONB, for eksempel `{"type":"USER","oid":"..."}`. Headeren skal kun brukes til sporbarhet, aldri til autorisasjon.
 
 ### Autorisasjon per entitet/tenant
 
