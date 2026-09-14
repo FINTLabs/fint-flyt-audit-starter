@@ -1,6 +1,7 @@
 package no.novari.flyt.audit.entity
 
 import no.novari.flyt.audit.actor.Actor
+import no.novari.flyt.audit.actor.ActorContext
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.Test
@@ -29,6 +30,7 @@ class CreatedAuditedEntityIntegrationTest {
     @AfterEach
     fun clearSecurityContext() {
         SecurityContextHolder.clearContext()
+        ActorContext.clear()
     }
 
     @Test
@@ -49,6 +51,20 @@ class CreatedAuditedEntityIntegrationTest {
         val saved = repository.saveAndFlush(CreatedTestEntity())
 
         assertThat(saved.createdBy).isEqualTo(Actor.System)
+    }
+
+    @Test
+    fun `createdBy settes fra scoped aktør uten sikkerhetskontekst`() {
+        val actor = Actor.User(UUID.randomUUID())
+        SecurityContextHolder.clearContext()
+
+        val saved =
+            ActorContext.withActor(actor) {
+                repository.saveAndFlush(CreatedTestEntity())
+            }
+
+        assertThat(saved.createdBy).isEqualTo(actor)
+        assertThat(ActorContext.currentActor()).isNull()
     }
 
     private fun setJwtWithOid(oid: UUID) {

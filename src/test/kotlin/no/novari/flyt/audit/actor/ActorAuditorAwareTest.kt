@@ -15,6 +15,7 @@ class ActorAuditorAwareTest {
     @AfterEach
     fun clearSecurityContext() {
         SecurityContextHolder.clearContext()
+        ActorContext.clear()
     }
 
     @Test
@@ -67,6 +68,19 @@ class ActorAuditorAwareTest {
         SecurityContextHolder.getContext().authentication = auth
 
         assertThat(auditorAware.currentAuditor).contains(Actor.System)
+    }
+
+    @Test
+    fun `scoped aktør vinner over sikkerhetskontekst`() {
+        val jwtOid = UUID.randomUUID()
+        val scopedOid = UUID.randomUUID()
+        setJwtAuthentication(claims = mapOf("objectidentifier" to jwtOid.toString()))
+
+        ActorContext.withActor(Actor.User(scopedOid)) {
+            assertThat(auditorAware.currentAuditor).contains(Actor.User(scopedOid))
+        }
+
+        assertThat(auditorAware.currentAuditor).contains(Actor.User(jwtOid))
     }
 
     private fun setJwtAuthentication(claims: Map<String, Any>) {
