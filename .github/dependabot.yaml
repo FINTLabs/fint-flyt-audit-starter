@@ -41,6 +41,7 @@ updates:
           - dependency-name: "jvm"
           - dependency-name: "plugin.spring"
           - dependency-name: "plugin.jpa"
+          - dependency-name: "kapt"
     - package-ecosystem: github-actions
       directory: "/"
       schedule:
