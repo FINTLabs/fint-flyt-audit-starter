@@ -68,8 +68,6 @@ dependencies {
             because("Fixes CVE-2024-25710 and CVE-2024-26308 in the Testcontainers transitive dependency")
         }
     }
-
-    implementation(kotlin("stdlib"))
     implementation(kotlin("reflect"))
 
     api("org.springframework.boot:spring-boot-autoconfigure")
@@ -83,16 +81,12 @@ dependencies {
 
     compileOnly("org.springframework.boot:spring-boot-starter-oauth2-resource-server")
     compileOnly("org.springframework.boot:spring-boot-starter-oauth2-client")
-
-    annotationProcessor("org.springframework.boot:spring-boot-configuration-processor")
     kapt("org.springframework.boot:spring-boot-configuration-processor")
 
     testImplementation("org.springframework.boot:spring-boot-starter-test")
     testImplementation("org.springframework.boot:spring-boot-starter-oauth2-resource-server")
     testImplementation("org.springframework.boot:spring-boot-starter-oauth2-client")
     testImplementation("org.springframework.boot:spring-boot-testcontainers")
-    testImplementation("org.springframework.security:spring-security-test")
-    testImplementation(platform("org.testcontainers:testcontainers-bom:2.0.5"))
     testImplementation("org.testcontainers:junit-jupiter")
     testImplementation("org.testcontainers:postgresql")
     testRuntimeOnly("org.postgresql:postgresql")
