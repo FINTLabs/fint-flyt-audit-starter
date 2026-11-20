@@ -1,52 +1,62 @@
 # fint-flyt-audit-starter
 
-Spring Boot-starter for endringslogg i FLYT-tjenester.
-Starteren leverer aktør-modell, `@MappedSuperclass`-hierarki, Hibernate Envers-integrasjon og historikk-API-støtte — slik at tjenester kan implementere endringslogg uten å bygge infrastrukturen på nytt.
+Spring Boot starter for change logs in FLYT services. It provides the actor model, a `@MappedSuperclass` hierarchy,
+Hibernate Envers integration and support for a history API, so services can add change logs without building the
+infrastructure again.
 
-## Innhold
+## Contents
 
-- [`Actor`](src/main/kotlin/no/novari/flyt/audit/actor/Actor.kt) — forseglet interface med subtypene `User`, `System`, `M2M`, `Unknown`. Serialiseres som JSONB.
-- [`ActorAuditorAware`](src/main/kotlin/no/novari/flyt/audit/actor/ActorAuditorAware.kt) — henter aktør fra scoped [`ActorContext`](src/main/kotlin/no/novari/flyt/audit/actor/ActorContext.kt), deretter JWT-sikkerhetskontekst (`objectidentifier` → `User`, `sub` → `M2M`, ingen JWT → `System`).
-- [`ActorContext`](src/main/kotlin/no/novari/flyt/audit/actor/ActorContext.kt) — trådlokal actor-override for avgrenset prosessering på vegne av en bruker.
-- [`ActorHeader`](src/main/kotlin/no/novari/flyt/audit/actor/ActorHeader.kt) — felles kontrakt og codec for actor i record-headeren `flyt.actor`.
-- [`CreatedAuditedEntity`](src/main/kotlin/no/novari/flyt/audit/entity/CreatedAuditedEntity.kt) — `@MappedSuperclass` med `createdAt` og `createdBy` (Variant B).
-- [`AuditedEntity`](src/main/kotlin/no/novari/flyt/audit/entity/AuditedEntity.kt) — utvider `CreatedAuditedEntity` med `lastModifiedAt` og `lastModifiedBy` (Variant C/D/E).
-- [`ActorRevisionEntity`](src/main/kotlin/no/novari/flyt/audit/revision/ActorRevisionEntity.kt) — Envers `@RevisionEntity` med JSONB `actor`-kolonne.
-- [`AuthorizationClient`](src/main/kotlin/no/novari/flyt/audit/authorization/AuthorizationClient.kt) — klient mot `fint-flyt-authorization-service` for navn-oppslag ved presentasjons-tid.
-- Flyway-migrasjonsmaler under [`src/main/resources/flyt-audit-templates/`](src/main/resources/flyt-audit-templates/) (bevisst utenfor `db/migration/` for å unngå auto-oppdagelse hos konsumenter — se under).
+- [`Actor`](src/main/kotlin/no/novari/flyt/audit/actor/Actor.kt): sealed interface with the subtypes `User`, `System`,
+  `M2M` and `Unknown`. Stored as JSONB.
+- [`ActorAuditorAware`](src/main/kotlin/no/novari/flyt/audit/actor/ActorAuditorAware.kt): takes the actor from
+  [`ActorContext`](src/main/kotlin/no/novari/flyt/audit/actor/ActorContext.kt), then from the JWT in the security
+  context (`objectidentifier` gives `User`, `sub` gives `M2M`, no JWT gives `System`).
+- [`ActorContext`](src/main/kotlin/no/novari/flyt/audit/actor/ActorContext.kt): actor override for work done on behalf
+  of a user, bound with a `ScopedValue`.
+- [`ActorHeader`](src/main/kotlin/no/novari/flyt/audit/actor/ActorHeader.kt): contract and codec for the actor in the
+  record header `flyt.actor`.
+- [`CreatedAuditedEntity`](src/main/kotlin/no/novari/flyt/audit/entity/CreatedAuditedEntity.kt): `@MappedSuperclass`
+  with `createdAt` and `createdBy` (variant B).
+- [`AuditedEntity`](src/main/kotlin/no/novari/flyt/audit/entity/AuditedEntity.kt): extends `CreatedAuditedEntity` with
+  `lastModifiedAt` and `lastModifiedBy` (variants C, D and E).
+- [`ActorRevisionEntity`](src/main/kotlin/no/novari/flyt/audit/revision/ActorRevisionEntity.kt): Envers
+  `@RevisionEntity` with a JSONB `actor` column.
+- [`AuthorizationClient`](src/main/kotlin/no/novari/flyt/audit/authorization/AuthorizationClient.kt): client for
+  `fint-flyt-authorization-service` that looks up names at presentation time.
+- A Flyway migration template in [`src/main/resources/flyt-audit-templates/`](src/main/resources/flyt-audit-templates/),
+  outside `db/migration/` on purpose, so Flyway in the app does not pick it up (see below).
 
-## Avhengighet
+The architecture is described in [docs/architecture.md](docs/architecture.md).
+
+## Dependency
 
 ```kotlin
 dependencies {
-    implementation("no.novari:flyt-audit-starter:<versjon>")
+    implementation("no.novari:flyt-audit-starter:<version>")
 }
 ```
 
-Publiseres til `https://repo.fintlabs.no/releases`. Krever JDK 25 eller nyere.
+Published to `https://repo.fintlabs.no/releases`. Requires Spring Boot 4 and JDK 25 or newer.
 
-## Kom i gang
+## Getting started
 
-### 1. Aktiver auditing
+### 1. Auditing is auto-configured
 
-```kotlin
-@SpringBootApplication
-@EnableFlytAuditing
-class MyServiceApplication
-```
+The auto-configurations enable JPA auditing, Envers integration and name resolution as soon as the starter is on the
+classpath. No annotation is needed.
 
-### 2. Velg variant
+### 2. Choose a variant
 
-| Variant | Baseklasse                   | Gir deg                                         |
-|---------|------------------------------|-------------------------------------------------|
-| B       | `CreatedAuditedEntity`       | `createdAt` + `createdBy` (kun opprettelse)     |
-| C       | `AuditedEntity`              | + `lastModifiedAt` + `lastModifiedBy`           |
-| D       | `AuditedEntity` + `@Audited` | + full Envers-historikk i `_aud`-tabell         |
-| E       | Variant D + historikk-API    | + REST-endepunkt via `HistoryControllerSupport` |
+| Variant | Base class                   | Gives you                                            |
+| ------- | ---------------------------- | ---------------------------------------------------- |
+| B       | `CreatedAuditedEntity`       | `createdAt` and `createdBy` (creation only)          |
+| C       | `AuditedEntity`              | also `lastModifiedAt` and `lastModifiedBy`           |
+| D       | `AuditedEntity` + `@Audited` | also full Envers history in an `_aud` table          |
+| E       | Variant D + history API      | also a REST endpoint with `HistoryControllerSupport` |
 
 ```kotlin
 @Entity
-@Audited          // kun for Variant D/E
+@Audited          // only for variants D and E
 @Table(name = "my_entity")
 class MyEntity : AuditedEntity() {
     @Id
@@ -57,15 +67,18 @@ class MyEntity : AuditedEntity() {
 }
 ```
 
-### 3. Flyway-migrasjoner
+### 3. Flyway migrations
 
-Starteren leverer [`V1__revinfo.sql`](src/main/resources/flyt-audit-templates/V1__revinfo.sql) (Envers `revinfo`-tabell og sekvens) **kun for Variant D/E** (Envers-historikk). Den ligger bevisst under `flyt-audit-templates/` og **ikke** under `db/migration/`, slik at Flyway hos konsumenten ikke auto-oppdager den (det ville kollidert med tjenestens egen `V1`). Kopier den til tjenestens `src/main/resources/db/migration/` og juster versjonsnummeret slik at det passer inn i tjenestens migrasjonsrekke.
+The starter provides [`V1__revinfo.sql`](src/main/resources/flyt-audit-templates/V1__revinfo.sql) (the Envers `revinfo`
+table and sequence), **only for variants D and E** (Envers history). It is in `flyt-audit-templates/` and **not** in
+`db/migration/`, so Flyway in the app does not find it on its own (it would clash with the service's own `V1`). Copy it
+to the service's `src/main/resources/db/migration/` and change the version number to fit the service's migrations.
 
-Variant B/C trenger ikke `revinfo` i det hele tatt — kun audit-kolonnene på entitetstabellen (se under).
+Variants B and C do not need `revinfo`, only the audit columns on the entity table (see below).
 
-For entitetens audit-felt og `_aud`-tabellen skriver tjenesten selv migrasjonene.
+The service writes the migrations for the audit columns and the `_aud` table itself.
 
-**Eksempel — audit-felt på ny tabell (Variant C/D/E):**
+**Example: audit columns on a new table (variants C, D and E):**
 
 ```sql
 ALTER TABLE my_entity
@@ -75,16 +88,19 @@ ALTER TABLE my_entity
     ADD COLUMN last_modified_by JSONB NOT NULL DEFAULT '{"type":"UNKNOWN"}'::jsonb;
 ```
 
-`*_at`-kolonnene er nullable — Spring Data setter dem automatisk ved første insert på nye rader.
+The `*_at` columns are nullable. Spring Data sets them on the first insert of new rows.
 
-**Retrofit av eksisterende tabell:** Hvis tabellen allerede har et `created_at`-felt med et annet navn eller type, bør verdiene kopieres over fremfor å settes til `now()`, da det er mer korrekt å la feltet stå `NULL` for rader som ble til før audit ble innført. For `TIMESTAMP → TIMESTAMPTZ`-konvertering er in-place-endring trygt:
+**Existing tables:** if the table already has a `created_at` field with another name or type, copy the values instead
+of setting them to `now()`. It is more correct to leave the field `NULL` for rows created before auditing was added. A
+`TIMESTAMP → TIMESTAMPTZ` conversion is safe in place:
 
 ```sql
 ALTER TABLE my_entity
     ALTER COLUMN created_at TYPE TIMESTAMPTZ USING created_at AT TIME ZONE 'UTC';
 ```
 
-For `*_by`-kolonner som allerede inneholder strenger (navn, e-post, OID): er verdien en UUID kan den konverteres til `Actor.User`-format; ellers settes den til `SYSTEM` eller `UNKNOWN`:
+For `*_by` columns that already hold strings (names, e-mail, OID): a UUID can be converted to the `Actor.User` format,
+anything else becomes `SYSTEM` or `UNKNOWN`:
 
 ```sql
 ALTER TABLE my_entity
@@ -98,7 +114,7 @@ ALTER TABLE my_entity
     END;
 ```
 
-**Eksempel — `_aud`-tabell (Variant D/E):**
+**Example: `_aud` table (variants D and E):**
 
 ```sql
 CREATE TABLE my_entity_aud (
@@ -110,24 +126,30 @@ CREATE TABLE my_entity_aud (
 );
 ```
 
-Legg til `spring.jpa.hibernate.ddl-auto: validate` i produksjonskonfigurasjon.
+Set `spring.jpa.hibernate.ddl-auto: validate` in production.
 
-**Historikk-endepunktene** (`GET /{id}/history` og `GET /history`) støtter `page`, `size` og `from`/`to`-filtrering. Sortering er fast: nyeste revisjon returneres alltid først og kan ikke overstyres via request-parametere.
+**The history endpoints** (`GET /{id}/history` and `GET /history`) support `page`, `size` and `from`/`to` filters. The
+order is fixed: the newest revision is always first, and request parameters cannot change it.
 
-> **Tilgangskontroll:** starteren legger ingen autentisering eller autorisasjon på historikk-endepunktene i seg selv. Konsumenten er ansvarlig for å sikre dem — typisk ved å montere kontrolleren under et internt path-prefix som sikres av tjenestens egen resource-server (`no.novari:flyt-web-resource-server`), f.eks. `no.novari.flyt.webresourceserver.UrlPaths.INTERNAL_API` (som krever gyldig bruker-JWT + `USER`-rolle), eller via egen Spring Security-konfigurasjon.
+> **Access control:** the starter adds no authentication or authorization to the history endpoints. The app must
+> secure them, typically by mounting the controller under an internal path prefix secured by the service's own
+> resource server (`no.novari:flyt-web-resource-server`), e.g. `no.novari.flyt.webresourceserver.UrlPaths.INTERNAL_API`
+> (which requires a valid user JWT and the `USER` role), or with its own Spring Security configuration.
 
-## Scoped aktør i asynkrone konsumenter
+## Actor in asynchronous consumers
 
-Kafka-listenere, schedulere og andre asynkrone prosesser kjører normalt uten Spring Security-kontekst. `ActorAuditorAware` faller da tilbake til `Actor.System`. Når en konsument prosesserer en melding på vegne av en bruker, må aktøren derfor settes eksplisitt og avgrenset rundt akkurat persisteringen som skal auditeres.
+Kafka listeners, schedulers and other asynchronous work normally run without a Spring Security context, so
+`ActorAuditorAware` falls back to `Actor.System`. When a consumer handles a message on behalf of a user, it must set the
+actor explicitly, around exactly the persistence that is audited.
 
-Produsenten serialiserer aktøren i record-headeren `flyt.actor`:
+The producer writes the actor to the record header `flyt.actor`:
 
 ```kotlin
 val actor = auditorAware.currentAuditor.orElse(Actor.System)
 val actorHeaderValue = ActorHeader.toHeaderValue(actor)
 ```
 
-Konsumenten leser headeren og lagrer innenfor actor-scope:
+The consumer reads the header and saves inside the actor scope:
 
 ```kotlin
 val actor =
@@ -145,11 +167,31 @@ if (actor != null) {
 }
 ```
 
-`ActorContext.withActor(...)` bruker `ThreadLocal` og gjenoppretter alltid tidligere aktør når blokken er ferdig, også hvis blokken kaster en exception. Header-verdien bruker samme JSON-kontrakt som `Actor`-JSONB, for eksempel `{"type":"USER","oid":"..."}`. Headeren skal kun brukes til sporbarhet, aldri til autorisasjon.
+`ActorContext.withActor(...)` binds the actor with a `ScopedValue`, so it is visible only inside the block, on the same
+thread, also if the block throws. The header value uses the same JSON contract as the `Actor` JSONB, for example
+`{"type":"USER","oid":"..."}`. Use the header only for traceability, never for authorization.
 
-### Autorisasjon per entitet/tenant
+> **Envers:** JPA auditing reads the actor when the entity is persisted, but Envers creates its revision when the
+> transaction commits, also after `saveAndFlush`. For `@Audited` entities, `withActor` must wrap the whole transaction,
+> including the commit. Otherwise `createdBy` gets the right user, but the revision in `revinfo` gets `Actor.System`:
+>
+> ```kotlin
+> // Right: the commit happens inside withActor.
+> ActorContext.withActor(actor) {
+>     myTransactionalService.save(entity)   // @Transactional
+> }
+>
+> // Wrong for @Audited entities: the transaction commits after withActor has ended.
+> @Transactional
+> fun save(entity: MyEntity, actor: Actor) {
+>     ActorContext.withActor(actor) { repository.saveAndFlush(entity) }
+> }
+> ```
 
-Er entiteten scopet til en bruker eller tenant (f.eks. en kildeapplikasjons-ID), holder ikke path-prefix-autentisering alene — `HistoryControllerSupport` gir to overstyrbare hooks for dette:
+### Authorization per entity or tenant
+
+If the entity is scoped to a user or tenant (e.g. a source application ID), authentication on the path prefix is not
+enough. `HistoryControllerSupport` has two hooks for this:
 
 ```kotlin
 @RestController
@@ -160,13 +202,13 @@ class TingHistoryController(
     historyService: TingHistoryService,
 ) : HistoryControllerSupport<Ting, Long, TingView>(historyService) {
 
-    // Kalles før GET /{id}/history returnerer data. Kast for å nekte tilgang.
+    // Called before GET /{id}/history returns data. Throw to deny access.
     override fun checkAccess(authentication: Authentication, id: Long) {
         val ting = tingRepository.findById(id).orElseThrow { TingNotFoundException(id) }
         userAuthorizationService.checkIfUserHasAccessToSourceApplication(authentication, ting.eierId)
     }
 
-    // Kalles før GET /history (all-tenant-listen) returnerer data.
+    // Called before GET /history (the list across all tenants) returns data.
     override fun additionalFilter(authentication: Authentication): AuditPropertyFilter =
         AuditPropertyFilter(
             property = "eierId",
@@ -175,13 +217,25 @@ class TingHistoryController(
 }
 ```
 
-`checkAccess` er no-op og `additionalFilter` returnerer `null` som standard — **et uoverstyrt `/history`-endepunkt eksponerer da endringshistorikk for samtlige rader, på tvers av eventuelle tenant-grenser.** Tjenester med tenant-scopede entiteter må aktivt overstyre `additionalFilter`. `AuditPropertyFilter.property` må matche et feltnavn på den auditerte entiteten (kolonnen finnes da i `_aud`-tabellen); filteret slås sammen med `from`/`to` og evaluares av Hibernate Envers (`AuditEntity.property(...).in(...)`). Er `allowedValues` tom (brukeren har tilgang til ingen tenants), returneres en tom side (`totalElements = 0`) uten å treffe databasen.
+`checkAccess` is a no-op and `additionalFilter` returns `null` by default, **so a `/history` endpoint that does not
+override it exposes the history of every row, across all tenants.** Services with tenant-scoped entities must override
+`additionalFilter`. `AuditPropertyFilter.property` must match a field name on the audited entity (so the column is in the
+`_aud` table). The filter is combined with `from`/`to` and evaluated by Hibernate Envers
+(`AuditEntity.property(...).in(...)`). If `allowedValues` is empty (the user has access to no tenants), an empty page
+(`totalElements = 0`) is returned without querying the database.
 
-**Slettinger og `store_data_at_delete`:** Envers lagrer som standard kun `id` i DEL-rader, slik at et tenant-felt som `fromApplicationId` blir `null` i slette-revisjonen og ville falt ut av et property-filtrert `/history`-oppslag — slettinger ville da manglet i den tenant-scopede lista. Starteren aktiverer derfor `org.hibernate.envers.store_data_at_delete=true` automatisk (via en `HibernatePropertiesCustomizer`), slik at DEL-rader beholder tenant-feltet og korrekt inkluderes. `snapshot` er fortsatt `null` for slettede revisjoner. Overstyr ved behov med `spring.jpa.properties.org.hibernate.envers.store_data_at_delete=false`.
+**Deletions and `store_data_at_delete`:** by default Envers stores only `id` in DEL rows, so a tenant field such as
+`fromApplicationId` is `null` in the delete revision and would drop out of a property-filtered `/history` lookup.
+Deletions would then be missing from the tenant-scoped list. The starter therefore sets
+`org.hibernate.envers.store_data_at_delete=true` (with a `HibernatePropertiesCustomizer`), so DEL rows keep the tenant
+field and are included. `snapshot` is still `null` for deleted revisions. Override it if needed with
+`spring.jpa.properties.org.hibernate.envers.store_data_at_delete=false`.
 
-## Hydrering av `createdBy` / `lastModifiedBy` i REST-DTOer
+## Resolving `createdBy` and `lastModifiedBy` in REST DTOs
 
-Entiteten lagrer `createdBy` som strukturert [`Actor`](src/main/kotlin/no/novari/flyt/audit/actor/Actor.kt) (JSONB). I REST-responsen ønsker web-klienten typisk navnet på personen — ikke `{"type":"USER","oid":"..."}`. Anbefalt kontrakt mot web er derfor et sidecar-mønster:
+The entity stores `createdBy` as a structured [`Actor`](src/main/kotlin/no/novari/flyt/audit/actor/Actor.kt) (JSONB).
+In the REST response the web client usually wants the person's name, not `{"type":"USER","oid":"..."}`. The recommended
+contract is therefore a sidecar pattern:
 
 ```json
 {
@@ -194,11 +248,13 @@ Entiteten lagrer `createdBy` som strukturert [`Actor`](src/main/kotlin/no/novari
 }
 ```
 
-`createdBy: String?` er hydrert visningsnavn (samme kontrakt som eldre tjenester som eksponerte navn som streng). `createdByActor: Actor?` er den strukturerte utvidelsen for klienter som trenger å filtrere på `oid`.
+`createdBy: String?` is the resolved display name (the same contract as older services that exposed the name as a
+string). `createdByActor: Actor?` is the structured value for clients that filter on `oid`.
 
 ### `ActorDisplayResolver`
 
-Starteren registrerer en [`ActorDisplayResolver`](src/main/kotlin/no/novari/flyt/audit/actor/ActorDisplayResolver.kt)-bønne automatisk (så snart en `ActorNameLookup`-implementasjon er tilgjengelig). Bruk den fra tjenestens mapping-lag:
+The starter registers an [`ActorDisplayResolver`](src/main/kotlin/no/novari/flyt/audit/actor/ActorDisplayResolver.kt)
+bean. Use it in the service's mapping layer:
 
 ```kotlin
 @Service
@@ -223,19 +279,21 @@ class MyEntityMappingService(private val resolver: ActorDisplayResolver) {
 }
 ```
 
-`resolveAll` gjør ett batch-kall pr side og bør brukes for listeresponser.
+`resolveAll` makes one batch call per page. Use it for lists.
 
-### Fallback-verdier
+### Fallback values
 
-| Actor-type      | Standard `String`-verdi                     |
-|-----------------|---------------------------------------------|
-| `User` (funnet) | Navn fra `fint-flyt-authorization-service`  |
-| `User` (miss)   | `null` (kan overstyres til f.eks. "Ukjent bruker") |
-| `System`        | `"System"`                                  |
-| `M2M`           | `clientId` (kan overstyres til fast merkelapp) |
-| `Unknown`       | `"Ukjent"`                                  |
+The defaults are Norwegian, because they are shown in the FLYT frontend.
 
-Fallbacks kan overstyres per tjeneste i `application.yaml`:
+| Actor type       | Default value                                     |
+| ---------------- | ------------------------------------------------- |
+| `User` (found)   | Name from `fint-flyt-authorization-service`       |
+| `User` (missing) | `null` (can be overridden, e.g. "Ukjent bruker")  |
+| `System`         | `"System"`                                        |
+| `M2M`            | `clientId` (can be overridden with a fixed label) |
+| `Unknown`        | `"Ukjent"`                                        |
+
+Override the fallbacks per service in `application.yaml`:
 
 ```yaml
 novari:
@@ -244,13 +302,15 @@ novari:
       display:
         system: "FLYT-plattform"
         unknown-user: "Ukjent bruker"
-        unknown: null    # returner null i stedet for "Ukjent"
+        unknown: null    # returns null instead of "Ukjent"
         m2m: "Systemintegrasjon"
 ```
 
-### Lokal hydrering (auth-service selv)
+### Local name resolution (authorization-service itself)
 
-Default-implementasjonen ([`HttpActorNameLookup`](src/main/kotlin/no/novari/flyt/audit/actor/ActorNameLookup.kt)) kaller `fint-flyt-authorization-service` over HTTP. Auth-service selv skal ikke kalle seg selv — den registrerer en egen `ActorNameLookup`-bønne som slår opp lokalt:
+The default implementation ([`HttpActorNameLookup`](src/main/kotlin/no/novari/flyt/audit/actor/ActorNameLookup.kt))
+calls `fint-flyt-authorization-service` over HTTP. authorization-service must not call itself, so it registers its own
+`ActorNameLookup` bean that looks up locally:
 
 ```kotlin
 @Configuration
@@ -264,25 +324,33 @@ class LocalActorNameLookupConfig {
 }
 ```
 
-Denne bønnen overstyrer default via `@ConditionalOnMissingBean(ActorNameLookup::class)`. Med lokal lookup trengs ikke [`AuthorizationClient`](src/main/kotlin/no/novari/flyt/audit/authorization/AuthorizationClient.kt)/OAuth2-klient-avhengigheten i den tjenesten.
+This bean replaces the default through `@ConditionalOnMissingBean(ActorNameLookup::class)`. With a local lookup, the
+service does not need the [`AuthorizationClient`](src/main/kotlin/no/novari/flyt/audit/authorization/AuthorizationClient.kt)
+or an OAuth2 client.
 
-## OAuth2-oppsett (for navnehydrering via historikk-API og REST-DTOer)
+## OAuth2 setup (name resolution in the history API and REST DTOs)
 
-Starteren kaller `fint-flyt-authorization-service` for å hente brukerens navn ved presentasjons-tid. Dette krever OAuth2 `client_credentials`-oppsett med tre konkrete steg.
+The starter calls `fint-flyt-authorization-service` to look up the user's name at presentation time. This needs an
+OAuth2 `client_credentials` setup in three steps.
 
-> **NB — fail-open:** Navnehydrering er "best effort". Mangler OAuth2-oppsettet, **krasjer ikke** tjenesten: starteren faller tilbake til [`NoOpActorNameLookup`](src/main/kotlin/no/novari/flyt/audit/actor/ActorNameLookup.kt) og logger en `WARN` ved oppstart, og `createdBy`/`lastModifiedBy`/`actorDisplay` blir da `null` (eller den konfigurerte fallback-verdien) i stedet for et navn. Er navn påkrevd i din tjeneste, verifiser `WARN`-loggen fravær ved oppstart. Kjøretidsfeil mot auth-service (nedetid, 401) håndteres likeledes failsafe — svaret returneres uten navn i stedet for å feile.
+> **Fail open:** name resolution is best effort. Without the OAuth2 setup the service **does not crash**: the starter
+> falls back to [`NoOpActorNameLookup`](src/main/kotlin/no/novari/flyt/audit/actor/ActorNameLookup.kt) and logs a
+> `WARN` at startup, and `createdBy`/`lastModifiedBy`/`actorDisplay` become `null` (or the configured fallback) instead of
+> a name. If your service needs names, check that the `WARN` is not logged at startup. Runtime errors from
+> authorization-service (downtime, 401) are handled the same way: the response is returned without names instead of
+> failing.
 
-### Steg 1 — Gradle-avhengighet
+### Step 1: Gradle dependency
 
 ```kotlin
 dependencies {
-    implementation("org.springframework.boot:spring-boot-starter-oauth2-client")
+    implementation("org.springframework.boot:spring-boot-starter-security-oauth2-client")
 }
 ```
 
-### Steg 2 — Kustomize CRD
+### Step 2: Kustomize CRD
 
-Legg til `kustomize/base/oauth2-authorization-client.yaml`:
+Add `kustomize/base/oauth2-authorization-client.yaml`:
 
 ```yaml
 apiVersion: "fintlabs.no/v1alpha1"
@@ -294,7 +362,8 @@ spec:
     - client_credentials
 ```
 
-Referer CRD-en i `flais.yaml` og map nøkkelen til tjeneste-spesifikk env-variabel (følger samme konvensjon som `authorization-service` selv bruker):
+Reference the CRD in `flais.yaml` and map the keys to service-specific environment variables (the same convention as
+authorization-service itself):
 
 ```yaml
 env:
@@ -310,9 +379,9 @@ env:
         key: fint.sso.client-secret
 ```
 
-### Steg 3 — Spring Security-profil
+### Step 3: Spring Security profile
 
-Legg til `src/main/resources/application-flyt-authorization-client.yaml`:
+Add `src/main/resources/application-flyt-authorization-client.yaml`:
 
 ```yaml
 spring:
@@ -330,16 +399,15 @@ spring:
             provider: fint-idp
 ```
 
-`provider.fint-idp` registreres ikke automatisk av noen starter — den må deklareres eksplisitt som over (samme `token-uri` brukes av alle FLYT-tjenester).
+No starter registers `provider.fint-idp`, so it must be declared as above (all FLYT services use the same `token-uri`).
 
-`novari.flyt.audit.authorization.base-url` er som standard `http://fint-flyt-authorization-service:8080`.
+`novari.flyt.audit.authorization.base-url` is `http://fint-flyt-authorization-service:8080` by default.
 
-**NB:** FLYT-tjenester deployes typisk med `server.servlet.context-path` satt per miljø/tenant
-(f.eks. `/beta/afk-no`), injisert som miljøvariabel av "flais"-CRD-en. `fint-flyt-authorization-service`
-er deployet med samme mønster, så et rent internt kall mot `http://fint-flyt-authorization-service:8080`
-(uten context-path) gir 404 i disse miljøene. Siden konsumenten og `fint-flyt-authorization-service` er
-ko-lokalisert i samme miljø/tenant, deler de samme context-path — bruk `${server.servlet.context-path:}`
-til å gjenbruke tjenestens egen verdi:
+**Note:** FLYT services are usually deployed with `server.servlet.context-path` set per environment and tenant (e.g.
+`/beta/afk-no`), injected as an environment variable by the flais CRD. `fint-flyt-authorization-service` is deployed the
+same way, so an internal call to `http://fint-flyt-authorization-service:8080` without the context path gives 404 there.
+The app and authorization-service run in the same environment and tenant and share the context path, so use
+`${server.servlet.context-path:}` to reuse the service's own value:
 
 ```yaml
 novari:
@@ -349,7 +417,8 @@ novari:
         base-url: 'http://fint-flyt-authorization-service:8080${server.servlet.context-path:}'
 ```
 
-Overstyr til en fast verdi kun ved behov, f.eks. i `local-staging` (som ikke har `server.servlet.context-path` satt):
+Override it with a fixed value only when needed, e.g. in `local-staging` (where `server.servlet.context-path` is not
+set):
 
 ```yaml
 novari:
@@ -359,17 +428,19 @@ novari:
         base-url: 'http://localhost:8084'
 ```
 
-Registration-ID-en i `spring.security.oauth2.client.registration` må matche `novari.flyt.audit.authorization.client-registration-id` (default `authorization-service`). Bruker du et annet navn i registreringen, setter du tilsvarende property:
+The registration ID in `spring.security.oauth2.client.registration` must match
+`novari.flyt.audit.authorization.client-registration-id` (`authorization-service` by default). If you use another name,
+set the property:
 
 ```yaml
 novari:
   flyt:
     audit:
       authorization:
-        client-registration-id: mitt-eget-navn
+        client-registration-id: my-own-name
 ```
 
-Aktiver profilen i `application.yaml`:
+Activate the profile in `application.yaml`:
 
 ```yaml
 spring:
@@ -377,50 +448,71 @@ spring:
     include: flyt-authorization-client
 ```
 
-Env-variablene `fint.flyt.authorization.sso.client-id` og `fint.flyt.authorization.sso.client-secret` settes av Kustomize-CRD-en i steg 2. For `local-staging` må disse settes manuelt eller via `.env`.
+The environment variables `fint.flyt.authorization.sso.client-id` and `fint.flyt.authorization.sso.client-secret` are set
+by the Kustomize CRD in step 2. In `local-staging` they must be set by hand or in `.env`.
 
-> **Navnekonvensjon:** Prefikset `fint.flyt.authorization.sso` gjenspeiler hvilken tjeneste credentials-ene tilhører. `authorization-service` bruker samme konvensjon internt, noe som forenkler debugging på tvers av tjenester.
+> **Naming:** the prefix `fint.flyt.authorization.sso` shows which service the credentials belong to. authorization-service
+> uses the same convention, which makes debugging across services easier.
 
-### Trenger du ikke navn-hydrering?
+### Without name resolution
 
-Tjenester som kun bruker Variant B/C (ingen historikk-API) kaller aldri `AuthorizationClient`. OAuth2-oppsettet kan da utelates.
+Services that only use variant B or C (no history API) never call `AuthorizationClient`, so the OAuth2 setup can be left
+out.
 
-## Konfigurasjonsproperties
+## Configuration properties
 
-| Property                                                 | Standard                                      | Beskrivelse                             |
-|----------------------------------------------------------|-----------------------------------------------|-----------------------------------------|
-| `novari.flyt.audit.authorization.base-url`               | `http://fint-flyt-authorization-service:8080` | Base-URL til auth-service               |
-| `novari.flyt.audit.authorization.client-registration-id` | `authorization-service`                       | Spring Security OAuth2-registrerings-ID |
-| `novari.flyt.audit.authorization.cache.enabled`          | `true`                                        | Aktiver Caffeine-cache for navn-oppslag |
-| `novari.flyt.audit.authorization.cache.ttl`              | `5m`                                          | Cache time-to-live                      |
-| `novari.flyt.audit.authorization.cache.max-size`         | `10000`                                       | Maks antall oppføringer i cache         |
-| `novari.flyt.audit.display.system`                       | `System`                                      | Visningsverdi for `Actor.System`        |
-| `novari.flyt.audit.display.unknown`                      | `Ukjent`                                      | Visningsverdi for `Actor.Unknown`       |
-| `novari.flyt.audit.display.unknown-user`                 | `null`                                        | Visningsverdi for `User` som ikke ble funnet |
-| `novari.flyt.audit.display.m2m`                          | `null`                                        | Visningsverdi for `Actor.M2M` (null → bruk `clientId`) |
+| Property                                                 | Default                                       | Description                                            |
+| -------------------------------------------------------- | --------------------------------------------- | ------------------------------------------------------ |
+| `novari.flyt.audit.authorization.base-url`               | `http://fint-flyt-authorization-service:8080` | Base URL of authorization-service                      |
+| `novari.flyt.audit.authorization.client-registration-id` | `authorization-service`                       | Spring Security OAuth2 registration ID                 |
+| `novari.flyt.audit.authorization.cache.enabled`          | `true`                                        | Caffeine cache for name lookups                        |
+| `novari.flyt.audit.authorization.cache.ttl`              | `5m`                                          | Cache time to live                                     |
+| `novari.flyt.audit.authorization.cache.max-size`         | `10000`                                       | Maximum number of cache entries                        |
+| `novari.flyt.audit.display.system`                       | `System`                                      | Display value for `Actor.System`                       |
+| `novari.flyt.audit.display.unknown`                      | `Ukjent`                                      | Display value for `Actor.Unknown`                      |
+| `novari.flyt.audit.display.unknown-user`                 | `null`                                        | Display value for a `User` that was not found          |
+| `novari.flyt.audit.display.m2m`                          | `null`                                        | Display value for `Actor.M2M` (`null` uses `clientId`) |
 
-## Bygging lokalt
+## Upgrading from 1.x to 2.0
+
+- Spring Boot 4, Hibernate 7 and Jackson 3 are required. The JSON format of `Actor`, in the database and in the
+  `flyt.actor` header, is unchanged.
+- `@EnableFlytAuditing` is removed. Delete it from the application class, since the auto-configurations already do
+  everything.
+- `ApplicationContextHolder` is removed. Hibernate creates `ActorRevisionListener` and `AuditMetricsListener` through
+  Spring's bean container. Tests that registered `ApplicationContextHolder` themselves can drop it.
+- The OAuth2 starter is `spring-boot-starter-security-oauth2-client` in Spring Boot 4.
+
+## Building locally
 
 ```bash
 ./gradlew check
 ```
 
-Krever JDK 25 (Temurin) og Docker (Testcontainers).
+Requires JDK 25 (Temurin) and Docker (Testcontainers).
 
-## Publisering
+## Publishing
 
-Publiseres til Reposilite via GitHub Actions ved GitHub Release. Tag-formatet er `vX.Y.Z`; versjonen blir `X.Y.Z` (uten `v`).
+Published to Reposilite by GitHub Actions on a GitHub release. The tag format is `vX.Y.Z`, and the version is `X.Y.Z`
+(without `v`).
 
-## Låsing av avhengigheter
+## Dependency locking
 
-Bygget bruker [Gradle dependency locking](https://docs.gradle.org/current/userguide/dependency_locking.html), slik at hvert bygg løser opp nøyaktig de samme direkte og transitive versjonene. De låste versjonene ligger i de committede `gradle.lockfile`-filene. En PR viser derfor alle transitive versjonsendringer den fører med seg. Gradle-plugins låses ikke, fordi Dependabot bare oppdaterer `gradle.lockfile`; versjonene deres er i stedet låst i `plugins`-blokka.
+The build uses [Gradle dependency locking](https://docs.gradle.org/current/userguide/dependency_locking.html), so every
+build resolves exactly the same direct and transitive versions. The locked versions are in the committed
+`gradle.lockfile` files, so a pull request shows every transitive version change it causes. Gradle plugins are not
+locked, because Dependabot only updates `gradle.lockfile`. Their versions are in `gradle/libs.versions.toml`.
 
-**Automatisk (Dependabot):** Dependabot oppdaterer lockfilene i sine egne PR-er, så det trengs ingen manuelle steg. Hvis to Dependabot-PR-er kommer i konflikt i en lockfile, rebaser Dependabot den gjenværende etter at den første er merget. Skjer ikke det, kommenter `@dependabot recreate` på PR-en.
+**Automatic (Dependabot):** Dependabot updates the lockfiles in its own pull requests, so no manual step is needed. If two
+Dependabot pull requests conflict in a lockfile, Dependabot rebases the remaining one after the first is merged. If it
+does not, comment `@dependabot recreate` on the pull request.
 
-**Manuelt:** Alle endringer du gjør for hånd som påvirker oppløsningen av avhengigheter, krever at lockfilene regenereres. Det gjelder versjoner, `extra[...]`-properties, constraints og nye eller fjernede avhengigheter:
+**Manual:** any change by hand that affects dependency resolution requires regenerating the lockfiles. That covers
+versions, constraints, and adding or removing a dependency:
 
 ```bash
 ./gradlew dependencies --write-locks
 ```
 
-Commit de oppdaterte lockfilene sammen med endringen. Glemmer du det, feiler bygget både lokalt og i CI med en feilmelding om at den oppløste versjonen «is not part of the dependency lock state».
+Commit the updated lockfiles with the change. If you forget, the build fails locally and in CI with an error saying the
+resolved version "is not part of the dependency lock state".

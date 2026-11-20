@@ -1,37 +1,31 @@
 package no.novari.flyt.audit.revision
 
 import no.novari.flyt.audit.actor.Actor
-import no.novari.flyt.audit.config.ApplicationContextHolder
 import org.hibernate.envers.RevisionListener
+import org.slf4j.Logger
 import org.slf4j.LoggerFactory
+import org.springframework.beans.factory.ObjectProvider
+import org.springframework.beans.factory.annotation.Qualifier
 import org.springframework.data.domain.AuditorAware
 
 /**
- * Hibernate Envers [RevisionListener] som setter [ActorRevisionEntity.actor] for hver revisjon.
+ * Hibernate Envers [RevisionListener] that sets [ActorRevisionEntity.actor] for every revision.
  *
- * Hibernate instansierer listeneren direkte (ikke via Spring), så aktøren hentes fra
- * [ApplicationContextHolder] ved hvert kall. Slår opp bønnen `flytAuditorAware` — den
- * samme som JPA-auditing bruker — for å garantere konsistent aktør på tvers av sporene.
+ * Hibernate creates the listener through Spring's bean container, so the `flytAuditorAware` bean that JPA auditing
+ * uses is injected, and both record the same actor.
  */
-class ActorRevisionListener : RevisionListener {
+class ActorRevisionListener(
+    @param:Qualifier("flytAuditorAware") private val auditorAware: ObjectProvider<AuditorAware<Actor>>,
+) : RevisionListener {
     override fun newRevision(revisionEntity: Any) {
-        val entity = revisionEntity as ActorRevisionEntity
-        entity.actor =
-            try {
-                @Suppress("UNCHECKED_CAST")
-                val auditorAware = ApplicationContextHolder.getContext().getBean("flytAuditorAware") as AuditorAware<Actor>
-                auditorAware.currentAuditor.orElse(Actor.System)
-            } catch (ex: Exception) {
-                logger.warn(
-                    "Fant ikke bønnen 'flytAuditorAware' — setter actor til System. " +
-                        "Sjekk at FlytAuditAutoConfiguration er aktiv.",
-                    ex,
-                )
-                Actor.System
-            }
+        val auditor = auditorAware.ifAvailable
+        if (auditor == null) {
+            logger.warn("No 'flytAuditorAware' bean, so the revision actor is System. Check that FlytAuditAutoConfiguration is active.")
+        }
+        (revisionEntity as ActorRevisionEntity).actor = auditor?.currentAuditor?.orElse(null) ?: Actor.System
     }
 
-    companion object {
-        private val logger = LoggerFactory.getLogger(ActorRevisionListener::class.java)
+    private companion object {
+        private val logger: Logger = LoggerFactory.getLogger(ActorRevisionListener::class.java)
     }
 }

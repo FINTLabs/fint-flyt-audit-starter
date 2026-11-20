@@ -4,17 +4,17 @@ import no.novari.flyt.audit.actor.Actor
 import java.time.Instant
 
 /**
- * Én rad i endringshistorikken for en entitet.
+ * One row in the change history of an entity.
  *
- * @param timestamp når revisjonen ble registrert
- * @param type hva slags endring revisjonen representerer
- * @param actor aktøren som utførte endringen (slik den ble lagret)
- * @param actorDisplay visningsnavn for aktøren, utledet av `ActorDisplayResolver` ved
- *   presentasjons-tid: brukernavn hydrert fra `fint-flyt-authorization-service`, eller
- *   fallback-verdi for System/M2M/Unknown (f.eks. `"System"`). `null` når navnet ikke
- *   kunne hentes, eller når fallback-verdien er konfigurert til `null`.
- * @param snapshot revisjonens tilstand slik `mapSnapshot` eksponerer den. `null` for
- *   slettede revisjoner (DELETED).
+ * @param timestamp when the revision was recorded
+ * @param type the kind of change the revision represents
+ * @param actor the actor that made the change, as stored
+ * @param actorDisplay display name for the actor, resolved by `ActorDisplayResolver` at
+ *   presentation time: the user name from `fint-flyt-authorization-service`, or the
+ *   fallback value for System/M2M/Unknown (e.g. `"System"`). `null` when the name could not
+ *   be looked up, or when the fallback value is configured as `null`.
+ * @param snapshot the state of the revision as `mapSnapshot` exposes it. `null` for
+ *   deleted revisions (DELETED).
  */
 data class HistoryEntryDto<T>(
     val timestamp: Instant,

@@ -15,18 +15,17 @@ class ActorAuditorAwareTest {
     @AfterEach
     fun clearSecurityContext() {
         SecurityContextHolder.clearContext()
-        ActorContext.clear()
     }
 
     @Test
-    fun `ingen authentication gir Actor-System`() {
+    fun `no authentication gives Actor System`() {
         SecurityContextHolder.clearContext()
 
         assertThat(auditorAware.currentAuditor).contains(Actor.System)
     }
 
     @Test
-    fun `JWT med objectidentifier gir Actor-User med riktig UUID`() {
+    fun `JWT with objectidentifier gives Actor User with the right UUID`() {
         val oid = UUID.randomUUID()
         setJwtAuthentication(claims = mapOf("objectidentifier" to oid.toString()))
 
@@ -34,21 +33,21 @@ class ActorAuditorAwareTest {
     }
 
     @Test
-    fun `JWT med ugyldig objectidentifier gir Actor-Unknown`() {
+    fun `JWT with an invalid objectidentifier gives Actor Unknown`() {
         setJwtAuthentication(claims = mapOf("objectidentifier" to "ikke-en-uuid"))
 
         assertThat(auditorAware.currentAuditor).contains(Actor.Unknown)
     }
 
     @Test
-    fun `JWT uten objectidentifier men med sub gir Actor-M2M`() {
+    fun `JWT without objectidentifier but with sub gives Actor M2M`() {
         setJwtAuthentication(claims = mapOf("sub" to "min-klient-id"))
 
         assertThat(auditorAware.currentAuditor).contains(Actor.M2M("min-klient-id"))
     }
 
     @Test
-    fun `JWT med både objectidentifier og sub gir Actor-User (objectidentifier vinner)`() {
+    fun `JWT with both objectidentifier and sub gives Actor User (objectidentifier wins)`() {
         val oid = UUID.randomUUID()
         setJwtAuthentication(claims = mapOf("objectidentifier" to oid.toString(), "sub" to "noen-klient"))
 
@@ -56,14 +55,14 @@ class ActorAuditorAwareTest {
     }
 
     @Test
-    fun `JWT uten objectidentifier og uten sub gir Actor-Unknown`() {
+    fun `JWT without objectidentifier and sub gives Actor Unknown`() {
         setJwtAuthentication(claims = mapOf("iss" to "test-issuer"))
 
         assertThat(auditorAware.currentAuditor).contains(Actor.Unknown)
     }
 
     @Test
-    fun `authentication uten JWT-principal gir Actor-System`() {
+    fun `authentication without a JWT principal gives Actor System`() {
         val auth = TestingAuthenticationToken("ikke-en-jwt", null)
         SecurityContextHolder.getContext().authentication = auth
 
@@ -71,7 +70,7 @@ class ActorAuditorAwareTest {
     }
 
     @Test
-    fun `scoped aktør vinner over sikkerhetskontekst`() {
+    fun `scoped actor wins over the security context`() {
         val jwtOid = UUID.randomUUID()
         val scopedOid = UUID.randomUUID()
         setJwtAuthentication(claims = mapOf("objectidentifier" to jwtOid.toString()))

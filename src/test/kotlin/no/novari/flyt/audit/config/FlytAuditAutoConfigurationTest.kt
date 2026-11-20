@@ -12,7 +12,7 @@ import org.junit.jupiter.api.Test
 import org.mockito.Mockito.mock
 import org.springframework.beans.factory.getBean
 import org.springframework.boot.autoconfigure.AutoConfigurations
-import org.springframework.boot.autoconfigure.orm.jpa.HibernatePropertiesCustomizer
+import org.springframework.boot.hibernate.autoconfigure.HibernatePropertiesCustomizer
 import org.springframework.boot.test.context.runner.ApplicationContextRunner
 import org.springframework.context.annotation.Bean
 import org.springframework.context.annotation.Configuration
@@ -25,7 +25,7 @@ class FlytAuditAutoConfigurationTest {
             .withConfiguration(AutoConfigurations.of(FlytAuditAutoConfiguration::class.java))
 
     @Test
-    fun `flytAuditorAware-bønne registreres som ActorAuditorAware`() {
+    fun `flytAuditorAware bean is registered as ActorAuditorAware`() {
         contextRunner.run { context ->
             assertThat(context).hasBean("flytAuditorAware")
             assertThat(context.getBean("flytAuditorAware")).isInstanceOf(ActorAuditorAware::class.java)
@@ -33,7 +33,7 @@ class FlytAuditAutoConfigurationTest {
     }
 
     @Test
-    fun `flytAuditorAware kan overstyres av konsument`() {
+    fun `flytAuditorAware can be overridden by the app`() {
         contextRunner
             .withUserConfiguration(CustomAuditorAwareConfig::class.java)
             .run { context ->
@@ -43,14 +43,7 @@ class FlytAuditAutoConfigurationTest {
     }
 
     @Test
-    fun `applicationContextHolder-bønne registreres`() {
-        contextRunner.run { context ->
-            assertThat(context).hasSingleBean(ApplicationContextHolder::class.java)
-        }
-    }
-
-    @Test
-    fun `auditMetrics-bønne registreres når MeterRegistry er tilgjengelig`() {
+    fun `auditMetrics bean is registered when a MeterRegistry exists`() {
         contextRunner
             .withBean(MeterRegistry::class.java, { SimpleMeterRegistry() as MeterRegistry })
             .run { context ->
@@ -59,21 +52,21 @@ class FlytAuditAutoConfigurationTest {
     }
 
     @Test
-    fun `auditMetrics-bønne registreres ikke uten MeterRegistry`() {
+    fun `auditMetrics bean is not registered without a MeterRegistry`() {
         contextRunner.run { context ->
             assertThat(context).doesNotHaveBean(AuditMetrics::class.java)
         }
     }
 
     @Test
-    fun `actorDisplayResolver-bønne registreres via no-op lookup uten authorizationClient`() {
+    fun `actorDisplayResolver bean is registered with the no-op lookup without authorizationClient`() {
         contextRunner.run { context ->
             assertThat(context).hasSingleBean(ActorDisplayResolver::class.java)
         }
     }
 
     @Test
-    fun `actorDisplayResolver-bønne registreres når AuthorizationClient er tilgjengelig`() {
+    fun `actorDisplayResolver bean is registered when an AuthorizationClient exists`() {
         contextRunner
             .withBean(
                 AuthorizationClient::class.java,
@@ -84,7 +77,7 @@ class FlytAuditAutoConfigurationTest {
     }
 
     @Test
-    fun `store_data_at_delete settes til true av HibernatePropertiesCustomizer`() {
+    fun `store_data_at_delete is set to true by HibernatePropertiesCustomizer`() {
         contextRunner.run { context ->
             val customizer = context.getBean<HibernatePropertiesCustomizer>()
             val properties = mutableMapOf<String, Any>()
@@ -94,7 +87,7 @@ class FlytAuditAutoConfigurationTest {
     }
 
     @Test
-    fun `store_data_at_delete overstyres ikke når konsumenten allerede har satt den`() {
+    fun `store_data_at_delete is not overridden when the app has set it`() {
         contextRunner.run { context ->
             val customizer = context.getBean<HibernatePropertiesCustomizer>()
             val properties = mutableMapOf<String, Any>("org.hibernate.envers.store_data_at_delete" to "false")

@@ -1,16 +1,16 @@
 package no.novari.flyt.audit.history
 
 /**
- * Ekstra restriksjon på [EnversHistoryService.findAllHistory]: kun revisjoner der `property`
- * (et felt på den auditerte entiteten) er blant `allowedValues` returneres.
+ * Extra restriction on [EnversHistoryService.findAllHistory]: only revisions where `property`
+ * (a field on the audited entity) is among `allowedValues` are returned.
  *
- * Brukes til å tenant-scope `/history`-endepunktet (all-tenant-listen) i
- * [no.novari.flyt.audit.web.HistoryControllerSupport.additionalFilter] — f.eks. en tjeneste der
- * entiteten tilhører en kildeapplikasjon kan begrense listen til kildeapplikasjonene den
- * innloggede brukeren har tilgang til.
+ * Used to scope the `/history` endpoint (the list across all tenants) in
+ * [no.novari.flyt.audit.web.HistoryControllerSupport.additionalFilter]. For example, a service whose
+ * entity belongs to a source application can limit the list to the source applications the
+ * signed-in user has access to.
  *
- * Tom [allowedValues] betyr «tilgang til ingen tenants» og gir en tom resultatside
- * ([EnversHistoryService.findAllHistory] kortslutter da uten å treffe databasen).
+ * Empty [allowedValues] means "access to no tenants" and gives an empty page
+ * ([EnversHistoryService.findAllHistory] then returns without querying the database).
  */
 data class AuditPropertyFilter(
     val property: String,

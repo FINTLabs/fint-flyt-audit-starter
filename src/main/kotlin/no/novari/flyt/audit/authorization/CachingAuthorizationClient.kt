@@ -5,17 +5,17 @@ import java.util.Optional
 import java.util.UUID
 
 /**
- * Caffeine-cachelag rundt [AuthorizationClient] for å begrense kall mot authorization-service.
+ * Caffeine cache around [AuthorizationClient] that limits calls to authorization-service.
  *
- * Cache-nøkkel er OID; verdien er `Optional<AuthorizedUserDto>` der tom Optional betyr at OID
- * ikke finnes. TTL og maks størrelse styres av [AuthorizationProperties.Cache].
- * Aktiveres automatisk via `flyt.audit.authorization.cache.enabled=true` (default).
+ * The key is the OID. The value is `Optional<AuthorizedUserDto>`, where an empty Optional means the OID
+ * does not exist. Time to live and maximum size come from [AuthorizationProperties.Cache].
+ * Enabled by `novari.flyt.audit.authorization.cache.enabled=true` (the default).
  */
 class CachingAuthorizationClient(
     private val delegate: AuthorizationClient,
     props: AuthorizationProperties.Cache,
 ) : AuthorizationClient {
-    // Optional.empty() = OID finnes ikke; Optional.of(dto) = funnet (name kan være null)
+    // Optional.empty() = the OID does not exist; Optional.of(dto) = found (name may be null)
     private val cache =
         Caffeine
             .newBuilder()

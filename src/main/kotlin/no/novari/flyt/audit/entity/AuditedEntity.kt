@@ -11,16 +11,16 @@ import org.springframework.data.annotation.LastModifiedDate
 import java.time.Instant
 
 /**
- * Variant C: utvider [CreatedAuditedEntity] med `last_modified_at` (Instant) og
- * `last_modified_by` (JSONB [Actor]) som oppdateres ved hver endring.
+ * Variant C: extends [CreatedAuditedEntity] with `last_modified_at` (Instant) and
+ * `last_modified_by` (JSONB [Actor]), updated on every change.
  *
- * Konsumenten eier Flyway-DDL og må i tillegg til [CreatedAuditedEntity]-kolonnene inkludere:
+ * The app owns the Flyway DDL and must add, in addition to the [CreatedAuditedEntity] columns:
  * ```sql
  * last_modified_at  TIMESTAMP WITH TIME ZONE NULL,
  * last_modified_by  JSONB                    NOT NULL DEFAULT '{"type":"UNKNOWN"}'::jsonb
  * ```
- * `last_modified_at` er nullable av samme grunn som `created_at` — se [CreatedAuditedEntity].
- * Feltene er ekskludert fra Envers `_aud`-tabeller via `@NotAudited`.
+ * `last_modified_at` is nullable for the same reason as `created_at`, see [CreatedAuditedEntity].
+ * The fields are excluded from Envers `_aud` tables with `@NotAudited`.
  */
 @MappedSuperclass
 abstract class AuditedEntity : CreatedAuditedEntity() {

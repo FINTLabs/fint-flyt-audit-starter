@@ -28,7 +28,7 @@ class CachingAuthorizationClientTest {
     }
 
     @Test
-    fun `findByObjectIdentifier - andre kall treffer cache og kaller ikke delegate`() {
+    fun `findByObjectIdentifier hits the cache on the second call and does not call the delegate`() {
         val oid = UUID.randomUUID()
         val dto = AuthorizedUserDto(oid, "Ola Nordmann")
         `when`(delegate.findByObjectIdentifier(oid)).thenReturn(dto)
@@ -42,7 +42,7 @@ class CachingAuthorizationClientTest {
     }
 
     @Test
-    fun `findByObjectIdentifier - negativt treff caches og kaller ikke delegate på nytt`() {
+    fun `findByObjectIdentifier caches a miss and does not call the delegate again`() {
         val oid = UUID.randomUUID()
         `when`(delegate.findByObjectIdentifier(oid)).thenReturn(null)
 
@@ -55,7 +55,7 @@ class CachingAuthorizationClientTest {
     }
 
     @Test
-    fun `findByObjectIdentifier - bruker med null-navn caches korrekt og returneres som funnet`() {
+    fun `findByObjectIdentifier caches a user with a null name and returns it as found`() {
         val oid = UUID.randomUUID()
         val dto = AuthorizedUserDto(oid, null)
         `when`(delegate.findByObjectIdentifier(oid)).thenReturn(dto)
@@ -69,7 +69,7 @@ class CachingAuthorizationClientTest {
     }
 
     @Test
-    fun `lookupUsers - OIDer i cache slippes ikke gjennom til delegate`() {
+    fun `lookupUsers does not pass cached OIDs to the delegate`() {
         val oid1 = UUID.randomUUID()
         val oid2 = UUID.randomUUID()
         val dto1 = AuthorizedUserDto(oid1, "Ola")
@@ -87,7 +87,7 @@ class CachingAuthorizationClientTest {
     }
 
     @Test
-    fun `lookupUsers - duplikate OIDer i inndata dedupliseres`() {
+    fun `lookupUsers removes duplicate OIDs in the input`() {
         val oid = UUID.randomUUID()
         val dto = AuthorizedUserDto(oid, "Ola")
         `when`(delegate.lookupUsers(listOf(oid))).thenReturn(listOf(dto))
@@ -99,7 +99,7 @@ class CachingAuthorizationClientTest {
     }
 
     @Test
-    fun `lookupUsers - cache deles med findByObjectIdentifier`() {
+    fun `lookupUsers shares the cache with findByObjectIdentifier`() {
         val oid = UUID.randomUUID()
         val dto = AuthorizedUserDto(oid, "Ola")
         `when`(delegate.findByObjectIdentifier(oid)).thenReturn(dto)

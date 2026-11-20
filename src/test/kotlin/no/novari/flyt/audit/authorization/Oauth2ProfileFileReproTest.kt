@@ -8,19 +8,19 @@ import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Test
 import org.springframework.boot.WebApplicationType
 import org.springframework.boot.autoconfigure.EnableAutoConfiguration
-import org.springframework.boot.autoconfigure.jdbc.DataSourceAutoConfiguration
-import org.springframework.boot.autoconfigure.orm.jpa.HibernateJpaAutoConfiguration
 import org.springframework.boot.builder.SpringApplicationBuilder
+import org.springframework.boot.hibernate.autoconfigure.HibernateJpaAutoConfiguration
+import org.springframework.boot.jdbc.autoconfigure.DataSourceAutoConfiguration
 import org.springframework.context.annotation.Configuration
 import org.springframework.security.oauth2.client.registration.ClientRegistrationRepository
 
 /**
- * Reproduserer discovery-service sin faktiske oppsett: en profil-spesifikk
- * `application-{profil}.yaml` lastet via `spring.profiles.active` gjennom en ekte
- * `SpringApplication` (IKKE via `withPropertyValues` direkte som i
- * [AuthorizationRestClientConfigurationIntegrationTest]), med placeholder-verdier
- * satt som System properties (samme oppløsningsmekanisme som miljøvariabler med
- * punktum i navnet).
+ * Reproduces the setup discovery-service used: a profile-specific
+ * `application-{profile}.yaml` loaded with `spring.profiles.active` through a real
+ * `SpringApplication` (not with `withPropertyValues` as in
+ * [AuthorizationRestClientConfigurationIntegrationTest]), with placeholder values
+ * set as system properties (resolved the same way as environment variables with
+ * dots in their names).
  */
 class Oauth2ProfileFileReproTest {
     @Configuration
@@ -33,7 +33,7 @@ class Oauth2ProfileFileReproTest {
     class TestApp
 
     @Test
-    fun `application-oauth2-repro yaml gir ClientRegistrationRepository via ekte auto-config-sortering`() {
+    fun `application-oauth2-repro yaml gives a ClientRegistrationRepository through the real auto-configuration order`() {
         System.setProperty("fint.flyt.authorization.sso.client-id", "test-client")
         System.setProperty("fint.flyt.authorization.sso.client-secret", "test-secret")
         val context =
@@ -55,7 +55,7 @@ class Oauth2ProfileFileReproTest {
     }
 
     @Test
-    fun `manglende client-id-secret velter ikke konteksten`() {
+    fun `missing client id and secret does not break the context`() {
         val context =
             SpringApplicationBuilder(TestApp::class.java)
                 .web(WebApplicationType.NONE)
