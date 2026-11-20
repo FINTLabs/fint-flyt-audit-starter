@@ -15,37 +15,26 @@ import org.testcontainers.junit.jupiter.Testcontainers
 import org.testcontainers.postgresql.PostgreSQLContainer
 
 /**
- * Verifiserer at @EnableFlytAuditing aktiverer Spring Data JPA Auditing i en full
- * Spring Boot-kontekst (samme oppsett som en produksjons-konsument bruker).
- *
- * Sliceduken `@DataJpaTest` har egen JpaAuditingTestConfig som dekker test-tilfellet —
- * men det betyr at slice-tester IKKE ville oppdaget hvis @EnableFlytAuditing brøt
- * auto-config-ordningen i prod. Denne testen lukker det hullet ved å bruke
- * @SpringBootTest med en konsument som etterligner produksjons-mønsteret:
- * @SpringBootApplication + @EnableFlytAuditing.
+ * Verifies that JPA auditing is active in a full Spring Boot application, through the auto-configurations alone.
+ * `@DataJpaTest` slices use their own auditing configuration and would not catch a broken auto-configuration order.
  */
-@SpringBootTest(classes = [EnableFlytAuditingProdLikeIntegrationTest.ConsumerApplication::class])
+@SpringBootTest(classes = [FlytAuditProdLikeIntegrationTest.ConsumerApplication::class])
 @Testcontainers
 @Transactional
-class EnableFlytAuditingProdLikeIntegrationTest {
+class FlytAuditProdLikeIntegrationTest {
     @SpringBootApplication(scanBasePackages = ["no.novari.flyt.audit"])
-    @EnableFlytAuditing
     class ConsumerApplication
 
     @Autowired
     private lateinit var repository: AuditedTestEntityRepository
 
     @Test
-    fun `JPA Auditing aktiveres når @EnableFlytAuditing brukes på en SpringBootApplication`() {
+    fun `JPA auditing sets createdBy and createdAt in a Spring Boot application`() {
         val saved = repository.saveAndFlush(AuditedTestEntity().apply { value = "test" })
 
         assertThat(saved.createdBy)
+            .withFailMessage("createdBy was not set, so FlytAuditJpaAuditingAutoConfiguration did not enable JPA auditing")
             .isEqualTo(Actor.System)
-            .withFailMessage(
-                "createdBy ble ikke populert av Spring Data JPA Auditing. " +
-                    "Sannsynligvis fordi @EnableJpaAuditing ikke ble aktivert — " +
-                    "auto-config-ordering bruteren av @EnableFlytAuditing sin @Import-mekanisme.",
-            )
         assertThat(saved.createdAt).isNotNull
     }
 
