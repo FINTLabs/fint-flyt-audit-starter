@@ -172,8 +172,21 @@ thread, also if the block throws. The header value uses the same JSON contract a
 `{"type":"USER","oid":"..."}`. Use the header only for traceability, never for authorization.
 
 > **Envers:** JPA auditing reads the actor when the entity is persisted, but Envers creates its revision when the
-> transaction is flushed. For `@Audited` entities, the flush must happen inside `withActor`, or the revision gets
-> `Actor.System`.
+> transaction commits, also after `saveAndFlush`. For `@Audited` entities, `withActor` must wrap the whole transaction,
+> including the commit. Otherwise `createdBy` gets the right user, but the revision in `revinfo` gets `Actor.System`:
+>
+> ```kotlin
+> // Right: the commit happens inside withActor.
+> ActorContext.withActor(actor) {
+>     myTransactionalService.save(entity)   // @Transactional
+> }
+>
+> // Wrong for @Audited entities: the transaction commits after withActor has ended.
+> @Transactional
+> fun save(entity: MyEntity, actor: Actor) {
+>     ActorContext.withActor(actor) { repository.saveAndFlush(entity) }
+> }
+> ```
 
 ### Authorization per entity or tenant
 

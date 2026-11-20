@@ -1,6 +1,7 @@
 package no.novari.flyt.audit.revision
 
 import no.novari.flyt.audit.actor.Actor
+import no.novari.flyt.audit.actor.ActorContext
 import no.novari.flyt.audit.entity.AuditTestConfig
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.AfterEach
@@ -15,8 +16,10 @@ import org.springframework.jdbc.core.JdbcTemplate
 import org.springframework.security.authentication.TestingAuthenticationToken
 import org.springframework.security.core.context.SecurityContextHolder
 import org.springframework.security.oauth2.jwt.Jwt
+import org.springframework.transaction.PlatformTransactionManager
 import org.springframework.transaction.annotation.Propagation
 import org.springframework.transaction.annotation.Transactional
+import org.springframework.transaction.support.TransactionTemplate
 import org.testcontainers.junit.jupiter.Container
 import org.testcontainers.junit.jupiter.Testcontainers
 import org.testcontainers.postgresql.PostgreSQLContainer
@@ -37,6 +40,9 @@ class ActorRevisionEntityIntegrationTest {
 
     @Autowired
     lateinit var jdbcTemplate: JdbcTemplate
+
+    @Autowired
+    lateinit var transactionManager: PlatformTransactionManager
 
     @BeforeEach
     fun cleanDatabase() {
@@ -89,6 +95,32 @@ class ActorRevisionEntityIntegrationTest {
         assertThat(revisions).hasSize(2)
         assertThat(revisions[0].actor).isEqualTo(Actor.User(oid1))
         assertThat(revisions[1].actor).isEqualTo(Actor.User(oid2))
+    }
+
+    @Test
+    fun `withActor around the whole transaction records the actor in the revision`() {
+        val actor = Actor.User(UUID.randomUUID())
+
+        ActorContext.withActor(actor) {
+            TransactionTemplate(transactionManager).executeWithoutResult {
+                entityRepository.saveAndFlush(RevisedTestEntity().apply { name = "test" })
+            }
+        }
+
+        assertThat(revisionRepository.findAll().single().actor).isEqualTo(actor)
+    }
+
+    @Test
+    fun `withActor inside a transaction does not reach the revision, which Envers creates at commit`() {
+        val actor = Actor.User(UUID.randomUUID())
+
+        TransactionTemplate(transactionManager).executeWithoutResult {
+            ActorContext.withActor(actor) {
+                entityRepository.saveAndFlush(RevisedTestEntity().apply { name = "test" })
+            }
+        }
+
+        assertThat(revisionRepository.findAll().single().actor).isEqualTo(Actor.System)
     }
 
     private fun setJwtWithOid(oid: UUID) {
