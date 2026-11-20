@@ -1,5 +1,6 @@
 package no.novari.flyt.audit.actor
 
+import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 import org.springframework.data.domain.AuditorAware
 import org.springframework.security.core.context.SecurityContextHolder
@@ -66,7 +67,7 @@ class ActorAuditorAware : AuditorAware<Actor> {
     }
 
     private companion object {
-        private val logger = LoggerFactory.getLogger(ActorAuditorAware::class.java)
+        private val logger: Logger = LoggerFactory.getLogger(ActorAuditorAware::class.java)
         private const val OBJECT_IDENTIFIER_CLAIM = "objectidentifier"
     }
 }

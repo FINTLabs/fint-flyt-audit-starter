@@ -1,13 +1,13 @@
 package no.novari.flyt.audit.actor
 
-import com.fasterxml.jackson.databind.ObjectMapper
-import com.fasterxml.jackson.module.kotlin.registerKotlinModule
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Test
+import tools.jackson.databind.ObjectMapper
+import tools.jackson.module.kotlin.jacksonObjectMapper
 import java.util.UUID
 
 class ActorJacksonTest {
-    private val mapper: ObjectMapper = ObjectMapper().registerKotlinModule()
+    private val mapper: ObjectMapper = jacksonObjectMapper()
 
     @Test
     fun `User serialiseres med type og oid`() {

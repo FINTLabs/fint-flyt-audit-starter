@@ -7,8 +7,8 @@ import no.novari.flyt.audit.config.FlytAuditAutoConfiguration
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Test
 import org.springframework.boot.autoconfigure.AutoConfigurations
-import org.springframework.boot.autoconfigure.security.oauth2.client.OAuth2ClientAutoConfiguration
-import org.springframework.boot.autoconfigure.web.client.RestClientAutoConfiguration
+import org.springframework.boot.restclient.autoconfigure.RestClientAutoConfiguration
+import org.springframework.boot.security.oauth2.client.autoconfigure.OAuth2ClientAutoConfiguration
 import org.springframework.boot.test.context.runner.ApplicationContextRunner
 
 /**

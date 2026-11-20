@@ -1,5 +1,6 @@
 package no.novari.flyt.audit.actor
 
+import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 import java.util.UUID
 
@@ -56,6 +57,6 @@ class ActorDisplayResolver(
     }
 
     private companion object {
-        val logger = LoggerFactory.getLogger(ActorDisplayResolver::class.java)
+        val logger: Logger = LoggerFactory.getLogger(ActorDisplayResolver::class.java)
     }
 }

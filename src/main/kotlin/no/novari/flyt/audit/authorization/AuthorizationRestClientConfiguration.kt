@@ -1,5 +1,6 @@
 package no.novari.flyt.audit.authorization
 
+import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 import org.springframework.beans.factory.ObjectProvider
 import org.springframework.beans.factory.annotation.Qualifier
@@ -8,8 +9,8 @@ import org.springframework.boot.autoconfigure.AutoConfigureAfter
 import org.springframework.boot.autoconfigure.condition.ConditionalOnBean
 import org.springframework.boot.autoconfigure.condition.ConditionalOnClass
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean
-import org.springframework.boot.autoconfigure.security.oauth2.client.OAuth2ClientAutoConfiguration
 import org.springframework.boot.context.properties.EnableConfigurationProperties
+import org.springframework.boot.security.oauth2.client.autoconfigure.OAuth2ClientAutoConfiguration
 import org.springframework.context.annotation.Bean
 import org.springframework.http.client.ClientHttpRequestFactory
 import org.springframework.security.oauth2.client.AuthorizedClientServiceOAuth2AuthorizedClientManager
@@ -95,6 +96,6 @@ class AuthorizationRestClientConfiguration {
     }
 
     private companion object {
-        val logger = LoggerFactory.getLogger(AuthorizationRestClientConfiguration::class.java)
+        val logger: Logger = LoggerFactory.getLogger(AuthorizationRestClientConfiguration::class.java)
     }
 }

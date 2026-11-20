@@ -21,7 +21,6 @@ updates:
           platform-and-tooling:
               patterns:
                   - "org.jetbrains.kotlin*"
-                  - "com.github.ben-manes.versions"
                   - "org.gradle.toolchains.foojay-resolver-convention"
                   - "org.jlleitschuh.gradle.ktlint"
           persistence-and-test:
@@ -44,10 +43,6 @@ updates:
           - dependency-name: "org.springframework*"
             update-types:
                 - "version-update:semver-major"
-          - dependency-name: "jvm"
-          - dependency-name: "plugin.spring"
-          - dependency-name: "plugin.jpa"
-          - dependency-name: "kapt"
     - package-ecosystem: github-actions
       directory: "/"
       schedule:

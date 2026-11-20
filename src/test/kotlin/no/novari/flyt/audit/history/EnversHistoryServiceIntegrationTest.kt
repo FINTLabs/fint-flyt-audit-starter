@@ -16,8 +16,8 @@ import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.springframework.beans.factory.annotation.Autowired
-import org.springframework.boot.test.autoconfigure.jdbc.AutoConfigureTestDatabase
-import org.springframework.boot.test.autoconfigure.orm.jpa.DataJpaTest
+import org.springframework.boot.data.jpa.test.autoconfigure.DataJpaTest
+import org.springframework.boot.jdbc.test.autoconfigure.AutoConfigureTestDatabase
 import org.springframework.boot.testcontainers.service.connection.ServiceConnection
 import org.springframework.context.annotation.Import
 import org.springframework.data.domain.PageRequest
@@ -29,9 +29,9 @@ import org.springframework.transaction.PlatformTransactionManager
 import org.springframework.transaction.annotation.Propagation
 import org.springframework.transaction.annotation.Transactional
 import org.springframework.transaction.support.TransactionTemplate
-import org.testcontainers.containers.PostgreSQLContainer
 import org.testcontainers.junit.jupiter.Container
 import org.testcontainers.junit.jupiter.Testcontainers
+import org.testcontainers.postgresql.PostgreSQLContainer
 import java.time.Instant
 import java.util.UUID
 
@@ -312,7 +312,7 @@ class EnversHistoryServiceIntegrationTest {
         filter: HistoryFilter = HistoryFilter(),
     ) = transactionTemplate.execute {
         historyService.findHistory(id, pageable, filter)
-    }!!
+    }
 
     private fun findAllHistory(
         pageable: PageRequest,
@@ -320,7 +320,7 @@ class EnversHistoryServiceIntegrationTest {
         propertyFilter: AuditPropertyFilter? = null,
     ) = transactionTemplate.execute {
         historyService.findAllHistory(pageable, filter, propertyFilter)
-    }!!
+    }
 
     private fun setJwtWithOid(oid: UUID) {
         val jwt =
@@ -338,6 +338,6 @@ class EnversHistoryServiceIntegrationTest {
         @Container
         @ServiceConnection
         @JvmStatic
-        val postgres: PostgreSQLContainer<*> = PostgreSQLContainer("postgres:17-alpine")
+        val postgres: PostgreSQLContainer = PostgreSQLContainer("postgres:17-alpine")
     }
 }

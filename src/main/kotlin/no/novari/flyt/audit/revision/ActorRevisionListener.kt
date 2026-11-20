@@ -3,6 +3,7 @@ package no.novari.flyt.audit.revision
 import no.novari.flyt.audit.actor.Actor
 import no.novari.flyt.audit.config.ApplicationContextHolder
 import org.hibernate.envers.RevisionListener
+import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 import org.springframework.data.domain.AuditorAware
 
@@ -32,6 +33,6 @@ class ActorRevisionListener : RevisionListener {
     }
 
     companion object {
-        private val logger = LoggerFactory.getLogger(ActorRevisionListener::class.java)
+        private val logger: Logger = LoggerFactory.getLogger(ActorRevisionListener::class.java)
     }
 }

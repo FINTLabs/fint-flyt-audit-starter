@@ -1,7 +1,7 @@
 package no.novari.flyt.audit.actor
 
-import com.fasterxml.jackson.databind.ObjectMapper
-import com.fasterxml.jackson.module.kotlin.registerKotlinModule
+import tools.jackson.databind.ObjectMapper
+import tools.jackson.module.kotlin.jacksonObjectMapper
 import java.nio.charset.StandardCharsets
 
 /**
@@ -10,7 +10,7 @@ import java.nio.charset.StandardCharsets
 object ActorHeader {
     const val HEADER_NAME = "flyt.actor"
 
-    private val mapper: ObjectMapper = ObjectMapper().registerKotlinModule()
+    private val mapper: ObjectMapper = jacksonObjectMapper()
 
     @JvmStatic
     fun toHeaderValue(actor: Actor): ByteArray = toHeaderValueString(actor).toByteArray(StandardCharsets.UTF_8)

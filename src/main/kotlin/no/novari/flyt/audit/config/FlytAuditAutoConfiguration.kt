@@ -11,6 +11,7 @@ import no.novari.flyt.audit.actor.NoOpActorNameLookup
 import no.novari.flyt.audit.authorization.AuthorizationClient
 import no.novari.flyt.audit.authorization.AuthorizationRestClientConfiguration
 import no.novari.flyt.audit.metrics.AuditMetrics
+import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 import org.springframework.beans.factory.ObjectProvider
 import org.springframework.boot.autoconfigure.AutoConfiguration
@@ -18,8 +19,8 @@ import org.springframework.boot.autoconfigure.AutoConfigureAfter
 import org.springframework.boot.autoconfigure.condition.ConditionalOnBean
 import org.springframework.boot.autoconfigure.condition.ConditionalOnClass
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean
-import org.springframework.boot.autoconfigure.orm.jpa.HibernatePropertiesCustomizer
 import org.springframework.boot.context.properties.EnableConfigurationProperties
+import org.springframework.boot.hibernate.autoconfigure.HibernatePropertiesCustomizer
 import org.springframework.context.annotation.Bean
 import org.springframework.data.domain.AuditorAware
 import org.springframework.data.jpa.domain.support.AuditingEntityListener
@@ -86,6 +87,6 @@ class FlytAuditAutoConfiguration {
         }
 
     private companion object {
-        val logger = LoggerFactory.getLogger(FlytAuditAutoConfiguration::class.java)
+        val logger: Logger = LoggerFactory.getLogger(FlytAuditAutoConfiguration::class.java)
     }
 }
