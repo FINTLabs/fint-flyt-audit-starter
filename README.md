@@ -26,6 +26,8 @@ infrastructure again.
 - A Flyway migration template in [`src/main/resources/flyt-audit-templates/`](src/main/resources/flyt-audit-templates/),
   outside `db/migration/` on purpose, so Flyway in the app does not pick it up (see below).
 
+The architecture is described in [docs/architecture.md](docs/architecture.md).
+
 ## Dependency
 
 ```kotlin
