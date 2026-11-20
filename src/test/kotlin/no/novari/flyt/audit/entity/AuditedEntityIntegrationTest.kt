@@ -32,7 +32,7 @@ class AuditedEntityIntegrationTest {
     }
 
     @Test
-    fun `createdAt, createdBy, lastModifiedAt og lastModifiedBy settes ved opprettelse`() {
+    fun `createdAt, createdBy, lastModifiedAt and lastModifiedBy are set on create`() {
         val oid = UUID.randomUUID()
         setJwtWithOid(oid)
 
@@ -45,7 +45,7 @@ class AuditedEntityIntegrationTest {
     }
 
     @Test
-    fun `lastModifiedBy oppdateres til ny aktør ved endring`() {
+    fun `lastModifiedBy is updated to the new actor on change`() {
         val creator = UUID.randomUUID()
         val updater = UUID.randomUUID()
 

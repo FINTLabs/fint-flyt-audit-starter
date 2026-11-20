@@ -10,55 +10,55 @@ import org.springframework.web.bind.annotation.GetMapping
 import org.springframework.web.bind.annotation.PathVariable
 
 /**
- * Abstrakt controller-base som eksponerer endringshistorikk for én entitet.
+ * Abstract controller base that exposes the change history of one entity.
  *
- * En tjeneste lager en konkret `@RestController` med eget `@RequestMapping`:
+ * A service creates a concrete `@RestController` with its own `@RequestMapping`:
  * ```
  * @RestController
  * @RequestMapping("/api/intern/min-tjeneste/ting")
  * class TingHistoryController(service: TingHistoryService)
  *     : HistoryControllerSupport<Ting, Long, TingView>(service)
  * ```
- * der `TingHistoryService : EnversHistoryService<Ting, Long, TingView>` og `TingView`
- * er formen på `snapshot` (se [EnversHistoryService.mapSnapshot]).
- * som da svarer på `GET /api/intern/min-tjeneste/ting/{id}/history` og
+ * where `TingHistoryService : EnversHistoryService<Ting, Long, TingView>` and `TingView`
+ * is the shape of `snapshot` (see [EnversHistoryService.mapSnapshot]).
+ * It then answers `GET /api/intern/min-tjeneste/ting/{id}/history` and
  * `GET /api/intern/min-tjeneste/ting/history`.
  *
- * Navn-hydrering og paginering håndteres i [EnversHistoryService] — denne
- * klassen er bare et tynt REST-lag. Resultater returneres alltid nyeste revisjon
- * først; sortering kan ikke overstyres via request-parametere.
+ * Name resolution and paging are done in [EnversHistoryService], so this
+ * class is only a thin REST layer. Results are always newest revision
+ * first, and the order cannot be overridden with request parameters.
  *
- * **Tilgangskontroll:** starteren legger ingen autentiserings- eller autorisasjonsgating
- * på endepunktene i seg selv. Konsumenten er ansvarlig for å sikre dem — typisk ved å montere
- * kontrolleren under et internt path-prefix som sikres av tjenestens egen resource-server
- * (`no.novari:flyt-web-resource-server`, f.eks. `UrlPaths.INTERNAL_API`) eller egen Spring
- * Security-konfig, **og** via de to hookene under dersom entiteten er scopet per bruker/tenant
- * (f.eks. en kildeapplikasjon):
+ * **Access control:** the starter adds no authentication or authorization to the
+ * endpoints. The app must secure them, typically by mounting the controller
+ * under an internal path prefix secured by the service's own resource server
+ * (`no.novari:flyt-web-resource-server`, e.g. `UrlPaths.INTERNAL_API`) or its own Spring
+ * Security configuration, **and** with the two hooks below if the entity is scoped per user or tenant
+ * (e.g. a source application):
  *
- * - [checkAccess] kalles før `/{id}/history` returnerer data. Kast en exception (f.eks. et
- *   403-mappet unntak) for å nekte tilgang til en gitt `id`. No-op som standard.
- * - [additionalFilter] kalles før `/history` (all-tenant-listen) returnerer data, og lar
- *   konsumenten begrense hvilke revisjoner som er synlige via et [AuditPropertyFilter] på et
- *   felt på entiteten (f.eks. kildeapplikasjons-ID). `null` som standard — **et uoverstyrt
- *   `/history`-endepunkt eksponerer da endringshistorikk for samtlige rader, på tvers av
- *   eventuelle tenant-grenser.** Tjenester med tenant-scopede entiteter må overstyre denne.
+ * - [checkAccess] is called before `/{id}/history` returns data. Throw an exception (e.g. one
+ *   mapped to 403) to deny access to a given `id`. No-op by default.
+ * - [additionalFilter] is called before `/history` (the list across all tenants) returns data, and lets
+ *   the app limit which revisions are visible with an [AuditPropertyFilter] on a
+ *   field of the entity (e.g. the source application ID). `null` by default, **so a `/history`
+ *   endpoint that does not override it exposes the history of every row, across
+ *   all tenants.** Services with tenant-scoped entities must override it.
  *
- * **Forutsetning — autentisert request:** endepunktene tar `Authentication` som non-null
- * parameter og forutsetter dermed at requesten er autentisert med en Spring Security-principal.
- * Det er oppfylt så lenge kontrolleren monteres bak tjenestens resource-server (over).
+ * **Requires an authenticated request:** the endpoints take `Authentication` as a non-null
+ * parameter, so the request must be authenticated with a Spring Security principal.
+ * That holds as long as the controller is mounted behind the service's resource server (above).
  */
 abstract class HistoryControllerSupport<T : Any, ID : Any, S : Any>(
     private val historyService: EnversHistoryService<T, ID, S>,
 ) {
-    /** No-op i basisklassen. Override for å håndheve tilgang før historikk for `id` returneres. */
+    /** No-op in the base class. Override to enforce access before the history for `id` is returned. */
     protected open fun checkAccess(
         authentication: Authentication,
         id: ID,
     ) {}
 
     /**
-     * `null` i basisklassen (ingen restriksjon). Override for å begrense `/history`
-     * (all-tenant-listen) til et delsett av revisjoner, f.eks. scopet til brukerens tenant.
+     * `null` in the base class (no restriction). Override to limit `/history`
+     * (the list across all tenants) to a subset of revisions, e.g. the user's tenants.
      */
     protected open fun additionalFilter(authentication: Authentication): AuditPropertyFilter? = null
 

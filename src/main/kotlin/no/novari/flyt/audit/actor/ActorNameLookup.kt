@@ -4,15 +4,15 @@ import no.novari.flyt.audit.authorization.AuthorizationClient
 import java.util.UUID
 
 /**
- * Strategi for å hente visningsnavn for en samling `Actor.User`-oid-er.
+ * Strategy for looking up display names for a set of `Actor.User` OIDs.
  *
- * Skiller "hvordan hentes navnet" fra "hvordan brukes det". Default-implementasjonen
- * ([HttpActorNameLookup]) kaller `fint-flyt-authorization-service` over HTTP.
- * `fint-flyt-authorization-service` selv registrerer en egen bean som slår opp
- * lokalt i sin egen `UserRepository` — se README-seksjon "Lokal hydrering".
+ * Separates how the name is looked up from how it is used. The default implementation
+ * ([HttpActorNameLookup]) calls `fint-flyt-authorization-service` over HTTP.
+ * `fint-flyt-authorization-service` itself registers its own bean that looks up
+ * in its own `UserRepository`, see the README section "Local name resolution".
  *
- * Returverdien inneholder én entry per oid; ukjent oid representeres som `null`-verdi.
- * Implementasjoner kan kaste ved feil — kalleren [ActorDisplayResolver] håndterer det failsafe.
+ * The result has one entry per OID, and an unknown OID has a `null` value.
+ * Implementations may throw, and the caller [ActorDisplayResolver] handles it.
  */
 fun interface ActorNameLookup {
     fun lookupNames(oids: Collection<UUID>): Map<UUID, String?>
@@ -30,14 +30,14 @@ class HttpActorNameLookup(
 }
 
 /**
- * Fallback for konsumenter som verken har OAuth2-klient mot `fint-flyt-authorization-service`
- * konfigurert, eller registrerer sin egen [ActorNameLookup] (som `fint-flyt-authorization-service`
- * selv gjør). Slår aldri opp navn — [ActorDisplayResolver] faller da tilbake til
- * `unknownUser`/`system`/`unknown`-verdiene fra [ActorDisplayProperties] for alle aktører.
+ * Fallback for apps that neither have an OAuth2 client for `fint-flyt-authorization-service`
+ * configured, nor register their own [ActorNameLookup] (as `fint-flyt-authorization-service`
+ * itself does). Never looks up names, so [ActorDisplayResolver] falls back to
+ * the `unknownUser`/`system`/`unknown` values from [ActorDisplayProperties] for every actor.
  *
- * Finnes for at [ActorDisplayResolver] alltid skal være tilgjengelig som bean, selv for
- * tjenester som kun bruker Variant B/C uten navn-hydrering — se README-seksjonen
- * "Trenger du ikke navn-hydrering?".
+ * Exists so that [ActorDisplayResolver] is always available as a bean, also in
+ * services that only use variant B/C without name resolution, see the README section
+ * "Without name resolution".
  */
 class NoOpActorNameLookup : ActorNameLookup {
     override fun lookupNames(oids: Collection<UUID>): Map<UUID, String?> = emptyMap()

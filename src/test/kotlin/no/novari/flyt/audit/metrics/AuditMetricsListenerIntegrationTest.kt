@@ -49,7 +49,7 @@ class AuditMetricsListenerIntegrationTest {
     }
 
     @Test
-    fun `AuditMetricsListener inkrementerer skriveteller ved lagring`() {
+    fun `AuditMetricsListener increments the write counter on save`() {
         setJwt()
         repository.saveAndFlush(AuditedTestEntity().apply { value = "first" })
 
@@ -61,7 +61,7 @@ class AuditMetricsListenerIntegrationTest {
     }
 
     @Test
-    fun `AuditMetricsListener inkrementerer teller ved oppdatering`() {
+    fun `AuditMetricsListener increments the counter on update`() {
         setJwt()
         val saved = repository.saveAndFlush(AuditedTestEntity().apply { value = "initial" })
         val afterInsert =

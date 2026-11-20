@@ -51,7 +51,7 @@ class ActorRevisionEntityIntegrationTest {
     }
 
     @Test
-    fun `actor settes til User ved revisjon med JWT`() {
+    fun `actor is User for a revision with a JWT`() {
         val oid = UUID.randomUUID()
         setJwtWithOid(oid)
 
@@ -63,7 +63,7 @@ class ActorRevisionEntityIntegrationTest {
     }
 
     @Test
-    fun `actor settes til System uten sikkerhetskontekst`() {
+    fun `actor is System without a security context`() {
         SecurityContextHolder.clearContext()
 
         entityRepository.saveAndFlush(RevisedTestEntity().apply { name = "test" })
@@ -74,7 +74,7 @@ class ActorRevisionEntityIntegrationTest {
     }
 
     @Test
-    fun `ny revisjon opprettes ved oppdatering med korrekt actor`() {
+    fun `an update creates a new revision with the right actor`() {
         val oid1 = UUID.randomUUID()
         val oid2 = UUID.randomUUID()
 

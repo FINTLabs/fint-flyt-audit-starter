@@ -126,13 +126,26 @@ class HistoryControllerSupportTest {
     private val testAuthentication = TestingAuthenticationToken("user", null)
 
     @org.junit.jupiter.api.BeforeEach
-    fun resetControllerState() {
+    fun resetState() {
         testHistoryController.denyAccessToId = null
         testHistoryController.filterToReturn = null
+        testHistoryController.lastCheckAccessId = null
+        testHistoryController.lastAdditionalFilterCalled = false
+        fakeHistoryService.apply {
+            canned = PageImpl(emptyList())
+            cannedAll = PageImpl(emptyList())
+            lastId = null
+            lastPageable = null
+            lastFilter = null
+            lastAllPageable = null
+            lastAllFilter = null
+            lastPropertyFilter = null
+            findHistoryCalled = false
+        }
     }
 
     @Test
-    fun `history-endepunkt mapper id og returnerer innhold`() {
+    fun `history endpoint maps the id and returns the content`() {
         val oid = UUID.randomUUID()
         fakeHistoryService.canned =
             PageImpl(
@@ -169,7 +182,7 @@ class HistoryControllerSupportTest {
     }
 
     @Test
-    fun `pageable-default settes når ingen parametere er gitt`() {
+    fun `pageable default is used without parameters`() {
         mockMvc
             .get("/test-entities/1/history") {
                 principal = testAuthentication
@@ -181,7 +194,7 @@ class HistoryControllerSupportTest {
     }
 
     @Test
-    fun `from- og to-parametere bindes til filteret`() {
+    fun `from and to parameters are bound to the filter`() {
         mockMvc
             .get("/test-entities/1/history") {
                 principal = testAuthentication
@@ -195,7 +208,7 @@ class HistoryControllerSupportTest {
     }
 
     @Test
-    fun `tomt filter når ingen tidsparametere er gitt`() {
+    fun `empty filter without time parameters`() {
         mockMvc
             .get("/test-entities/1/history") {
                 principal = testAuthentication
@@ -207,7 +220,7 @@ class HistoryControllerSupportTest {
     }
 
     @Test
-    fun `allHistory-endepunkt delegerer til findAllHistory og inkluderer entityId i respons`() {
+    fun `allHistory endpoint delegates to findAllHistory and includes entityId in the response`() {
         val oid = UUID.randomUUID()
         fakeHistoryService.cannedAll =
             PageImpl(
@@ -246,7 +259,7 @@ class HistoryControllerSupportTest {
     }
 
     @Test
-    fun `allHistory pageable-default settes når ingen parametere er gitt`() {
+    fun `allHistory pageable default is used without parameters`() {
         mockMvc
             .get("/test-entities/history") {
                 principal = testAuthentication
@@ -258,7 +271,7 @@ class HistoryControllerSupportTest {
     }
 
     @Test
-    fun `allHistory from- og to-parametere bindes til filteret`() {
+    fun `allHistory from and to parameters are bound to the filter`() {
         mockMvc
             .get("/test-entities/history") {
                 principal = testAuthentication
@@ -272,7 +285,7 @@ class HistoryControllerSupportTest {
     }
 
     @Test
-    fun `checkAccess kalles med id før findHistory`() {
+    fun `checkAccess is called with the id before findHistory`() {
         mockMvc
             .get("/test-entities/42/history") {
                 principal = testAuthentication
@@ -283,7 +296,7 @@ class HistoryControllerSupportTest {
     }
 
     @Test
-    fun `checkAccess som kaster forhindrer at findHistory kalles`() {
+    fun `checkAccess that throws prevents findHistory`() {
         testHistoryController.denyAccessToId = 99L
         fakeHistoryService.findHistoryCalled = false
 
@@ -297,7 +310,7 @@ class HistoryControllerSupportTest {
     }
 
     @Test
-    fun `additionalFilter sitt resultat videreføres til findAllHistory`() {
+    fun `the additionalFilter result is passed to findAllHistory`() {
         val propertyFilter = AuditPropertyFilter(property = "eierId", allowedValues = listOf(1L, 2L))
         testHistoryController.filterToReturn = propertyFilter
 
@@ -311,7 +324,7 @@ class HistoryControllerSupportTest {
     }
 
     @Test
-    fun `additionalFilter er null som standard`() {
+    fun `additionalFilter is null by default`() {
         mockMvc
             .get("/test-entities/history") {
                 principal = testAuthentication

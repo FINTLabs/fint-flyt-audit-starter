@@ -33,7 +33,7 @@ class CreatedAuditedEntityIntegrationTest {
     }
 
     @Test
-    fun `createdAt og createdBy settes ved lagring`() {
+    fun `createdAt and createdBy are set on save`() {
         val oid = UUID.randomUUID()
         setJwtWithOid(oid)
 
@@ -44,7 +44,7 @@ class CreatedAuditedEntityIntegrationTest {
     }
 
     @Test
-    fun `createdBy er Actor-System uten sikkerhetskontekst`() {
+    fun `createdBy is Actor System without a security context`() {
         SecurityContextHolder.clearContext()
 
         val saved = repository.saveAndFlush(CreatedTestEntity())
@@ -53,7 +53,7 @@ class CreatedAuditedEntityIntegrationTest {
     }
 
     @Test
-    fun `createdBy settes fra scoped aktør uten sikkerhetskontekst`() {
+    fun `createdBy is set from the scoped actor without a security context`() {
         val actor = Actor.User(UUID.randomUUID())
         SecurityContextHolder.clearContext()
 

@@ -17,7 +17,7 @@ class ActorNameLookupAutoConfigTest {
             .withConfiguration(AutoConfigurations.of(FlytAuditAutoConfiguration::class.java))
 
     @Test
-    fun `HttpActorNameLookup registreres når AuthorizationClient er tilgjengelig`() {
+    fun `HttpActorNameLookup is registered when an AuthorizationClient exists`() {
         contextRunner
             .withBean(AuthorizationClient::class.java, { mock(AuthorizationClient::class.java) })
             .run { context ->
@@ -29,7 +29,7 @@ class ActorNameLookupAutoConfigTest {
     }
 
     @Test
-    fun `egen ActorNameLookup-bønne overstyrer default HTTP-versjon`() {
+    fun `a custom ActorNameLookup bean overrides the default HTTP lookup`() {
         contextRunner
             .withBean(AuthorizationClient::class.java, { mock(AuthorizationClient::class.java) })
             .withUserConfiguration(LocalLookupConfig::class.java)
@@ -42,7 +42,7 @@ class ActorNameLookupAutoConfigTest {
     }
 
     @Test
-    fun `uten AuthorizationClient faller lookup tilbake til no-op, men resolver registreres fortsatt`() {
+    fun `without AuthorizationClient the lookup falls back to no-op, but the resolver is still registered`() {
         contextRunner.run { context ->
             assertThat(context).hasSingleBean(ActorNameLookup::class.java)
             assertThat(context.getBean(ActorNameLookup::class.java))

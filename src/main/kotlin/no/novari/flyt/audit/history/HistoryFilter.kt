@@ -4,10 +4,10 @@ import org.springframework.format.annotation.DateTimeFormat
 import java.time.Instant
 
 /**
- * Filter for historikk-oppslag. Tom som standard (ingen avgrensning).
+ * Filter for history lookups. Empty by default (no restriction).
  *
- * Bindes fra request-parametere av [no.novari.flyt.audit.web.HistoryControllerSupport]:
- * `?from=2026-06-17T10:00:00Z&to=2026-06-18T10:00:00Z`. Begge er valgfrie.
+ * Bound from request parameters by [no.novari.flyt.audit.web.HistoryControllerSupport]:
+ * `?from=2026-06-17T10:00:00Z&to=2026-06-18T10:00:00Z`. Both are optional.
  */
 data class HistoryFilter(
     @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME)

@@ -12,21 +12,21 @@ import org.springframework.boot.security.oauth2.client.autoconfigure.OAuth2Clien
 import org.springframework.boot.test.context.runner.ApplicationContextRunner
 
 /**
- * Regresjonstest for rc-10/rc-11-bugene: uten
- * `@AutoConfigureAfter(OAuth2ClientAutoConfiguration::class)` kunne
- * `ClientRegistrationRepository` bli registrert etter denne klassens
- * `@ConditionalOnBean`-sjekker, som gjorde at konsumenter falt stille tilbake til
- * `NoOpActorNameLookup` selv med korrekt OAuth2-oppsett.
+ * Regression test for the rc-10 and rc-11 bugs: without
+ * `@AutoConfigureAfter(OAuth2ClientAutoConfiguration::class)`,
+ * `ClientRegistrationRepository` could be registered after this class's
+ * `@ConditionalOnBean` checks, so apps silently fell back to
+ * `NoOpActorNameLookup` even with a correct OAuth2 setup.
  *
- * Testen bruker kun ekte auto-konfigurasjoner ([OAuth2ClientAutoConfiguration],
- * [RestClientAutoConfiguration]) og properties — ingen manuelt registrerte støtte-bønner.
- * Manuelt registrerte bønner prosesseres alltid før auto-konfigurasjon og skjuler både
- * rekkefølge-bugs og manglende bønne-avhengigheter (som `ClientHttpRequestFactory`-kravet
- * som knakk oppstart i rc-11).
+ * The test uses only real auto-configurations ([OAuth2ClientAutoConfiguration],
+ * [RestClientAutoConfiguration]) and properties, no manually registered beans.
+ * Manually registered beans are always processed before auto-configuration and hide both
+ * ordering bugs and missing bean dependencies (such as the `ClientHttpRequestFactory` requirement
+ * that broke startup in rc-11).
  */
 class AuthorizationRestClientConfigurationIntegrationTest {
     @Test
-    fun `hele kjeden fra Spring Boots egne auto-konfigurasjoner til HttpActorNameLookup kobles sammen`() {
+    fun `the chain from Spring Boot's auto-configurations to HttpActorNameLookup is wired`() {
         ApplicationContextRunner()
             .withConfiguration(
                 AutoConfigurations.of(

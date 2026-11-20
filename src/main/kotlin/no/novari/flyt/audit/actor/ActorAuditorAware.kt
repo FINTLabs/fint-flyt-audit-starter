@@ -9,13 +9,13 @@ import java.util.Optional
 import java.util.UUID
 
 /**
- * Utleder hvilken [Actor] som skal logges som createdBy/lastModifiedBy.
+ * Decides which [Actor] is recorded as createdBy/lastModifiedBy.
  *
- * Følger claim-konvensjonen i `flyt-web-resource-server`:
- * - Brukere har `objectidentifier`-claim (UUID, FINT/Novari-ekvivalent til Entras `oid`)
- * - Interne M2M-klienter har bare standard OAuth2 `sub`-claim (ingen `objectidentifier`)
+ * Follows the claim convention in `flyt-web-resource-server`:
+ * - Users have the `objectidentifier` claim (a UUID, the FINT/Novari equivalent of Entra's `oid`).
+ * - Internal M2M clients only have the standard OAuth2 `sub` claim (no `objectidentifier`).
  *
- * Ingen authentication / ikke-JWT principal → [Actor.System] (typisk Kafka- og scheduler-flyt).
+ * No authentication or a non-JWT principal gives [Actor.System] (typically Kafka and scheduled work).
  */
 class ActorAuditorAware : AuditorAware<Actor> {
     override fun getCurrentAuditor(): Optional<Actor> = Optional.of(resolveActor())
@@ -25,14 +25,14 @@ class ActorAuditorAware : AuditorAware<Actor> {
 
         val authentication = SecurityContextHolder.getContext().authentication
         if (authentication == null) {
-            logger.debug("Ingen Authentication i SecurityContext — bruker Actor.System")
+            logger.debug("No Authentication in the SecurityContext, using Actor.System")
             return Actor.System
         }
 
         val principal = authentication.principal
         if (principal !is Jwt) {
             logger.debug(
-                "Authentication.principal er ikke Jwt (faktisk type: {}) — bruker Actor.System",
+                "Authentication.principal is not a Jwt (actual type: {}), using Actor.System",
                 principal?.javaClass?.name ?: "null",
             )
             return Actor.System
@@ -44,7 +44,7 @@ class ActorAuditorAware : AuditorAware<Actor> {
                 Actor.User(UUID.fromString(objectIdentifier))
             } catch (_: IllegalArgumentException) {
                 logger.warn(
-                    "JWT '{}'-claim er ikke en gyldig UUID: '{}' — bruker Actor.Unknown",
+                    "JWT '{}' claim is not a valid UUID: '{}', using Actor.Unknown",
                     OBJECT_IDENTIFIER_CLAIM,
                     objectIdentifier,
                 )
@@ -58,8 +58,8 @@ class ActorAuditorAware : AuditorAware<Actor> {
         }
 
         logger.warn(
-            "JWT mangler både '{}'- og 'sub'-claim — bruker Actor.Unknown. " +
-                "Tilgjengelige claims: {}",
+            "JWT has neither a '{}' nor a 'sub' claim, using Actor.Unknown. " +
+                "Available claims: {}",
             OBJECT_IDENTIFIER_CLAIM,
             principal.claims.keys,
         )

@@ -64,7 +64,7 @@ class AuditedRevisedEntityIntegrationTest {
         object : AuthorizationClient {
             override fun findByObjectIdentifier(oid: UUID) = null
 
-            override fun lookupUsers(oids: List<UUID>) = oids.map { AuthorizedUserDto(it, "Test Bruker") }
+            override fun lookupUsers(oids: List<UUID>) = oids.map { AuthorizedUserDto(it, "Test User") }
         }
 
     private lateinit var historyService: EnversHistoryService<AuditedRevisedTestEntity, Long, AuditedRevisedTestEntity>
@@ -91,7 +91,7 @@ class AuditedRevisedEntityIntegrationTest {
     }
 
     @Test
-    fun `_aud-tabell inneholder ikke audit-kolonner (created_at, created_by, last_modified_at, last_modified_by)`() {
+    fun `_aud table has no audit columns (created_at, created_by, last_modified_at, last_modified_by)`() {
         setJwtWithOid(userOid)
         entityRepository.saveAndFlush(AuditedRevisedTestEntity().apply { name = "v1" })
 
@@ -106,7 +106,7 @@ class AuditedRevisedEntityIntegrationTest {
     }
 
     @Test
-    fun `historikk returneres korrekt for entitet som kombinerer @Audited og AuditedEntity`() {
+    fun `history is correct for an entity that combines @Audited and AuditedEntity`() {
         setJwtWithOid(userOid)
         val saved = entityRepository.saveAndFlush(AuditedRevisedTestEntity().apply { name = "v1" })
         val id = saved.id!!
@@ -123,7 +123,7 @@ class AuditedRevisedEntityIntegrationTest {
     }
 
     @Test
-    fun `audit-kolonner på entity-tabellen er fortsatt populert`() {
+    fun `audit columns on the entity table are still set`() {
         setJwtWithOid(userOid)
         val saved = entityRepository.saveAndFlush(AuditedRevisedTestEntity().apply { name = "v1" })
 

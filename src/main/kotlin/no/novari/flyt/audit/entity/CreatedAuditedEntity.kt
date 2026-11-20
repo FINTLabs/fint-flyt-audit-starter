@@ -14,24 +14,24 @@ import org.springframework.data.jpa.domain.support.AuditingEntityListener
 import java.time.Instant
 
 /**
- * Variant B: superklasse som populerer `created_at` (Instant) og `created_by` (JSONB [Actor])
- * automatisk via Spring Data JPA Auditing.
+ * Variant B: superclass that sets `created_at` (Instant) and `created_by` (JSONB [Actor])
+ * through Spring Data JPA auditing.
  *
- * Konsumenten eier Flyway-DDL og må inkludere disse kolonnene i sin migrering:
+ * The app owns the Flyway DDL and must add these columns in its migration:
  * ```sql
  * created_at  TIMESTAMP WITH TIME ZONE NULL,
  * created_by  JSONB                    NOT NULL DEFAULT '{"type":"UNKNOWN"}'::jsonb
  * ```
- * `created_at` er nullable slik at retrofit av eksisterende tabeller kan bruke `NULL` for
- * migrerte rader i stedet for et forfalsket tidsstempel. Spring Data setter feltet automatisk
- * ved første insert på nye rader.
+ * `created_at` is nullable, so tables that get auditing later can keep `NULL` for
+ * existing rows instead of a made-up timestamp. Spring Data sets the field
+ * on the first insert of new rows.
  *
- * `createdBy` er nullable på objekt-nivå: et nykonstruert, ulagret objekt har `null` inntil
- * JPA Auditing populerer feltet ved persist. Kolonnen er likevel `NOT NULL`, så et faktisk
- * insert uten aktiv auditing feiler mot databasen (fail-fast).
+ * `createdBy` is nullable on the object: a new, unsaved object has `null` until
+ * JPA auditing sets the field on persist. The column is still `NOT NULL`, so an
+ * insert without active auditing fails in the database (fail fast).
  *
- * `@Audited`-entiteter som arver denne klassen trenger ikke speile kolonnene i `_aud`-tabellen
- * — de er ekskludert fra Envers via `@NotAudited`.
+ * `@Audited` entities that extend this class do not need the columns in their `_aud` table,
+ * since they are excluded from Envers with `@NotAudited`.
  */
 @MappedSuperclass
 @EntityListeners(AuditingEntityListener::class, AuditMetricsListener::class)

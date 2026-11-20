@@ -10,8 +10,8 @@ import jakarta.persistence.Table
 import org.hibernate.annotations.Type
 
 /**
- * Test-entitet som verifiserer at [Actor] mapper riktig mot en JSONB-kolonne.
- * Kun for tester — ikke en del av starterens main-kode.
+ * Test entity that checks that [Actor] maps to a JSONB column.
+ * Only for tests, not part of the starter's main code.
  */
 @Entity
 @Table(name = "actor_holder")

@@ -26,7 +26,7 @@ class ActorJsonbIntegrationTest {
     private val mapper = ObjectMapper()
 
     @Test
-    fun `User-aktør lagres og leses som JSONB`() {
+    fun `User actor is stored and read as JSONB`() {
         val oid = UUID.fromString("a1b2c3d4-e5f6-7890-abcd-ef1234567890")
         val saved = repository.saveAndFlush(ActorHolderEntity(actor = Actor.User(oid)))
         em.clear()
@@ -38,7 +38,7 @@ class ActorJsonbIntegrationTest {
     }
 
     @Test
-    fun `System-aktør lagres og leses som JSONB`() {
+    fun `System actor is stored and read as JSONB`() {
         val saved = repository.saveAndFlush(ActorHolderEntity(actor = Actor.System))
         em.clear()
 
@@ -49,7 +49,7 @@ class ActorJsonbIntegrationTest {
     }
 
     @Test
-    fun `M2M-aktør lagres og leses som JSONB`() {
+    fun `M2M actor is stored and read as JSONB`() {
         val saved = repository.saveAndFlush(ActorHolderEntity(actor = Actor.M2M("client-abc")))
         em.clear()
 
@@ -60,7 +60,7 @@ class ActorJsonbIntegrationTest {
     }
 
     @Test
-    fun `Unknown-aktør lagres og leses som JSONB`() {
+    fun `Unknown actor is stored and read as JSONB`() {
         val saved = repository.saveAndFlush(ActorHolderEntity(actor = Actor.Unknown))
         em.clear()
 

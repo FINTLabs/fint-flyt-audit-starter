@@ -86,7 +86,7 @@ class EnversHistoryServiceIntegrationTest {
     }
 
     @Test
-    fun `historikk returneres nyeste først med riktig type og hydrert navn`() {
+    fun `history is newest first with the right type and resolved name`() {
         setJwtWithOid(userOid)
         val saved = entityRepository.saveAndFlush(RevisedTestEntity().apply { name = "v1" })
         val id = saved.id!!
@@ -108,7 +108,7 @@ class EnversHistoryServiceIntegrationTest {
     }
 
     @Test
-    fun `sletting gir DELETED-entry med null snapshot`() {
+    fun `deletion gives a DELETED entry with a null snapshot`() {
         setJwtWithOid(userOid)
         val saved = entityRepository.saveAndFlush(RevisedTestEntity().apply { name = "v1" })
         val id = saved.id!!
@@ -123,7 +123,7 @@ class EnversHistoryServiceIntegrationTest {
     }
 
     @Test
-    fun `System-aktør får display via ActorDisplayResolver`() {
+    fun `System actor gets its display value from ActorDisplayResolver`() {
         SecurityContextHolder.clearContext()
         val saved = entityRepository.saveAndFlush(RevisedTestEntity().apply { name = "v1" })
         val id = saved.id!!
@@ -135,7 +135,7 @@ class EnversHistoryServiceIntegrationTest {
     }
 
     @Test
-    fun `paginering avgrenser innhold men teller totalt`() {
+    fun `paging limits the content but counts the total`() {
         setJwtWithOid(userOid)
         val saved = entityRepository.saveAndFlush(RevisedTestEntity().apply { name = "v1" })
         val id = saved.id!!
@@ -152,7 +152,7 @@ class EnversHistoryServiceIntegrationTest {
     }
 
     @Test
-    fun `from-filter ekskluderer eldre revisjoner`() {
+    fun `from filter excludes older revisions`() {
         setJwtWithOid(userOid)
         val saved = entityRepository.saveAndFlush(RevisedTestEntity().apply { name = "v1" })
         val id = saved.id!!
@@ -165,7 +165,7 @@ class EnversHistoryServiceIntegrationTest {
     }
 
     @Test
-    fun `findAllHistory returnerer historikk for alle entiteter med entityId`() {
+    fun `findAllHistory returns history for all entities with entityId`() {
         setJwtWithOid(userOid)
         val a = entityRepository.saveAndFlush(RevisedTestEntity().apply { name = "a" })
         val b = entityRepository.saveAndFlush(RevisedTestEntity().apply { name = "b" })
@@ -177,7 +177,7 @@ class EnversHistoryServiceIntegrationTest {
     }
 
     @Test
-    fun `findAllHistory sorterer nyeste revisjon først på tvers av entiteter`() {
+    fun `findAllHistory sorts newest revision first across entities`() {
         setJwtWithOid(userOid)
         val a = entityRepository.saveAndFlush(RevisedTestEntity().apply { name = "a1" })
         a.name = "a2"
@@ -191,7 +191,7 @@ class EnversHistoryServiceIntegrationTest {
     }
 
     @Test
-    fun `findAllHistory DEL-entry har entityId satt og snapshot null`() {
+    fun `findAllHistory DEL entry has entityId and a null snapshot`() {
         setJwtWithOid(userOid)
         val saved = entityRepository.saveAndFlush(RevisedTestEntity().apply { name = "v1" })
         val id = saved.id!!
@@ -206,7 +206,7 @@ class EnversHistoryServiceIntegrationTest {
     }
 
     @Test
-    fun `findAllHistory paginering avgrenser innhold men teller totalt`() {
+    fun `findAllHistory paging limits the content but counts the total`() {
         setJwtWithOid(userOid)
         repeat(3) { i ->
             entityRepository.saveAndFlush(RevisedTestEntity().apply { name = "e$i" })
@@ -219,7 +219,7 @@ class EnversHistoryServiceIntegrationTest {
     }
 
     @Test
-    fun `findAllHistory from-filter ekskluderer eldre revisjoner`() {
+    fun `findAllHistory from filter excludes older revisions`() {
         setJwtWithOid(userOid)
         entityRepository.saveAndFlush(RevisedTestEntity().apply { name = "v1" })
 
@@ -231,7 +231,7 @@ class EnversHistoryServiceIntegrationTest {
     }
 
     @Test
-    fun `findAllHistory hydrerer actorDisplay for bruker-aktør`() {
+    fun `findAllHistory resolves actorDisplay for a user actor`() {
         setJwtWithOid(userOid)
         entityRepository.saveAndFlush(RevisedTestEntity().apply { name = "v1" })
 
@@ -242,7 +242,7 @@ class EnversHistoryServiceIntegrationTest {
     }
 
     @Test
-    fun `findAllHistory med propertyFilter begrenser til matchende entiteter`() {
+    fun `findAllHistory with propertyFilter limits to matching entities`() {
         setJwtWithOid(userOid)
         val a = entityRepository.saveAndFlush(RevisedTestEntity().apply { name = "keep" })
         entityRepository.saveAndFlush(RevisedTestEntity().apply { name = "exclude" })
@@ -254,7 +254,7 @@ class EnversHistoryServiceIntegrationTest {
     }
 
     @Test
-    fun `findAllHistory uten propertyFilter returnerer alt (regresjonsvern)`() {
+    fun `findAllHistory without propertyFilter returns everything`() {
         setJwtWithOid(userOid)
         entityRepository.saveAndFlush(RevisedTestEntity().apply { name = "a" })
         entityRepository.saveAndFlush(RevisedTestEntity().apply { name = "b" })
@@ -265,7 +265,7 @@ class EnversHistoryServiceIntegrationTest {
     }
 
     @Test
-    fun `findAllHistory med propertyFilter inkluderer slette-revisjon (store_data_at_delete)`() {
+    fun `findAllHistory with propertyFilter includes the delete revision (store_data_at_delete)`() {
         setJwtWithOid(userOid)
         val saved =
             entityRepository.saveAndFlush(
@@ -290,7 +290,7 @@ class EnversHistoryServiceIntegrationTest {
     }
 
     @Test
-    fun `findAllHistory med tom allowedValues gir tom side uten å treffe databasen`() {
+    fun `findAllHistory with empty allowedValues gives an empty page without querying the database`() {
         setJwtWithOid(userOid)
         entityRepository.saveAndFlush(
             RevisedTestEntity().apply {
