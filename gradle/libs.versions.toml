@@ -1,4 +1,5 @@
 [versions]
+logback = "1.6.8"
 spring-boot = "4.1.2"
 kotlin = "2.4.10"
 # The Kotlin version in the Spring Boot BOM. Keep it in step with spring-boot.
@@ -8,6 +9,7 @@ ktlint-cli = "1.8.0"
 hypersistence-utils = "3.16.0"
 
 [libraries]
+logback-core = { module = "ch.qos.logback:logback-core", version.ref = "logback" }
 spring-boot-dependencies = { module = "org.springframework.boot:spring-boot-dependencies", version.ref = "spring-boot" }
 hypersistence-utils-hibernate = { module = "io.hypersistence:hypersistence-utils-hibernate-73", version.ref = "hypersistence-utils" }
 

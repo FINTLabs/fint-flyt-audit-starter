@@ -54,6 +54,15 @@ listOf("compileClasspath", "runtimeClasspath", "testCompileClasspath", "testRunt
 
 dependencies {
     springBootBom(platform(libs.spring.boot.dependencies))
+
+    constraints {
+        ktlint(libs.logback.core) {
+            because(
+                "ktlint 1.8.0 brings logback-core 1.3.16, which has CVE-2026-1225, CVE-2026-9828 and " +
+                    "CVE-2026-10532. Only the ktlint tool classpath, not the published library",
+            )
+        }
+    }
     kapt(platform(libs.spring.boot.dependencies))
 
     implementation(kotlin("reflect"))
