@@ -43,13 +43,6 @@ class FlytAuditAutoConfigurationTest {
     }
 
     @Test
-    fun `applicationContextHolder-bønne registreres`() {
-        contextRunner.run { context ->
-            assertThat(context).hasSingleBean(ApplicationContextHolder::class.java)
-        }
-    }
-
-    @Test
     fun `auditMetrics-bønne registreres når MeterRegistry er tilgjengelig`() {
         contextRunner
             .withBean(MeterRegistry::class.java, { SimpleMeterRegistry() as MeterRegistry })

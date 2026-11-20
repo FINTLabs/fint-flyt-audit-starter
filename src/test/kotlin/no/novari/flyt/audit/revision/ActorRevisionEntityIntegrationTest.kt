@@ -1,7 +1,6 @@
 package no.novari.flyt.audit.revision
 
 import no.novari.flyt.audit.actor.Actor
-import no.novari.flyt.audit.config.ApplicationContextHolder
 import no.novari.flyt.audit.entity.AuditTestConfig
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.AfterEach
@@ -27,7 +26,7 @@ import java.util.UUID
 @DataJpaTest
 @AutoConfigureTestDatabase(replace = AutoConfigureTestDatabase.Replace.NONE)
 @Testcontainers
-@Import(AuditTestConfig::class, ApplicationContextHolder::class)
+@Import(AuditTestConfig::class)
 @Transactional(propagation = Propagation.NOT_SUPPORTED)
 class ActorRevisionEntityIntegrationTest {
     @Autowired

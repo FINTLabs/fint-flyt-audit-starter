@@ -34,10 +34,6 @@ class FlytAuditAutoConfiguration {
     @ConditionalOnMissingBean(name = ["flytAuditorAware"])
     fun flytAuditorAware(): AuditorAware<Actor> = ActorAuditorAware()
 
-    @Bean
-    @ConditionalOnMissingBean
-    fun applicationContextHolder() = ApplicationContextHolder()
-
     /**
      * `@ConditionalOnBean(AuthorizationClient::class)` på to alternative `@Bean`-metoder er
      * ordre-sensitivt: den evalueres i REGISTER_BEAN-fasen, som kan kjøre før

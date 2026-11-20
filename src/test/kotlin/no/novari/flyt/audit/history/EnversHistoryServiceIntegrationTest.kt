@@ -7,7 +7,6 @@ import no.novari.flyt.audit.actor.ActorDisplayResolver
 import no.novari.flyt.audit.actor.HttpActorNameLookup
 import no.novari.flyt.audit.authorization.AuthorizationClient
 import no.novari.flyt.audit.authorization.AuthorizedUserDto
-import no.novari.flyt.audit.config.ApplicationContextHolder
 import no.novari.flyt.audit.entity.AuditTestConfig
 import no.novari.flyt.audit.revision.RevisedTestEntity
 import no.novari.flyt.audit.revision.RevisedTestEntityRepository
@@ -38,7 +37,7 @@ import java.util.UUID
 @DataJpaTest
 @AutoConfigureTestDatabase(replace = AutoConfigureTestDatabase.Replace.NONE)
 @Testcontainers
-@Import(AuditTestConfig::class, ApplicationContextHolder::class)
+@Import(AuditTestConfig::class)
 @Transactional(propagation = Propagation.NOT_SUPPORTED)
 class EnversHistoryServiceIntegrationTest {
     @Autowired

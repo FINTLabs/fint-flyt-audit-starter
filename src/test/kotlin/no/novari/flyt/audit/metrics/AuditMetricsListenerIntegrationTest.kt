@@ -1,7 +1,6 @@
 package no.novari.flyt.audit.metrics
 
 import io.micrometer.core.instrument.simple.SimpleMeterRegistry
-import no.novari.flyt.audit.config.ApplicationContextHolder
 import no.novari.flyt.audit.entity.AuditTestConfig
 import no.novari.flyt.audit.entity.AuditedTestEntity
 import no.novari.flyt.audit.entity.AuditedTestEntityRepository
@@ -27,7 +26,7 @@ import java.util.UUID
 @DataJpaTest
 @AutoConfigureTestDatabase(replace = AutoConfigureTestDatabase.Replace.NONE)
 @Testcontainers
-@Import(AuditTestConfig::class, ApplicationContextHolder::class, AuditMetricsListenerIntegrationTest.MetricsConfig::class)
+@Import(AuditTestConfig::class, AuditMetricsListenerIntegrationTest.MetricsConfig::class)
 class AuditMetricsListenerIntegrationTest {
     @TestConfiguration
     class MetricsConfig {
