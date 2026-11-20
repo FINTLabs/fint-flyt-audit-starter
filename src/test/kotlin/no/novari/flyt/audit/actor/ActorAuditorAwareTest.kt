@@ -15,7 +15,6 @@ class ActorAuditorAwareTest {
     @AfterEach
     fun clearSecurityContext() {
         SecurityContextHolder.clearContext()
-        ActorContext.clear()
     }
 
     @Test

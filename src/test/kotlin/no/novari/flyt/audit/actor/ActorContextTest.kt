@@ -2,16 +2,10 @@ package no.novari.flyt.audit.actor
 
 import org.assertj.core.api.Assertions.assertThat
 import org.assertj.core.api.Assertions.assertThatThrownBy
-import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.Test
 import java.util.UUID
 
 class ActorContextTest {
-    @AfterEach
-    fun clearActorContext() {
-        ActorContext.clear()
-    }
-
     @Test
     fun `withActor setter aktør kun innenfor scope`() {
         val actor = Actor.User(UUID.randomUUID())

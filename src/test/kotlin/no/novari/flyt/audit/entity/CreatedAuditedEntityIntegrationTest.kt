@@ -30,7 +30,6 @@ class CreatedAuditedEntityIntegrationTest {
     @AfterEach
     fun clearSecurityContext() {
         SecurityContextHolder.clearContext()
-        ActorContext.clear()
     }
 
     @Test
