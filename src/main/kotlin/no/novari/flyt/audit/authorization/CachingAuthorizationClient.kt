@@ -9,7 +9,7 @@ import java.util.UUID
  *
  * The key is the OID. The value is `Optional<AuthorizedUserDto>`, where an empty Optional means the OID
  * does not exist. Time to live and maximum size come from [AuthorizationProperties.Cache].
- * Enabled by `flyt.audit.authorization.cache.enabled=true` (the default).
+ * Enabled by `novari.flyt.audit.authorization.cache.enabled=true` (the default).
  */
 class CachingAuthorizationClient(
     private val delegate: AuthorizationClient,
