@@ -10,8 +10,8 @@ buildscript {
         classpath(platform("com.fasterxml.jackson:jackson-bom:2.23.0"))
         constraints {
             classpath("org.apache.httpcomponents.client5:httpclient5:5.6.5")
-            classpath("org.apache.httpcomponents.core5:httpcore5:5.4.4")
-            classpath("org.apache.httpcomponents.core5:httpcore5-h2:5.4.4")
+            classpath("org.apache.httpcomponents.core5:httpcore5:5.5")
+            classpath("org.apache.httpcomponents.core5:httpcore5-h2:5.5")
             classpath("org.apache.commons:commons-lang3:3.22.0")
         }
     }
