@@ -25,8 +25,8 @@ java {
 
 kotlin {
     compilerOptions {
-        // Spring Boot 4.1 manages Kotlin 2.3, so apps may run with a 2.3 stdlib.
-        apiVersion = KotlinVersion.KOTLIN_2_3
+        // Spring Boot 4.2 manages Kotlin 2.4, so apps may run with a 2.4 stdlib.
+        apiVersion = KotlinVersion.KOTLIN_2_4
     }
     // The stdlib version Spring Boot manages, not the Kotlin plugin's, so the library does not upgrade it in apps.
     coreLibrariesVersion =
