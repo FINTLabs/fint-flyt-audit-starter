@@ -15,18 +15,20 @@ import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 import org.springframework.beans.factory.ObjectProvider
 import org.springframework.boot.autoconfigure.AutoConfiguration
-import org.springframework.boot.autoconfigure.AutoConfigureAfter
 import org.springframework.boot.autoconfigure.condition.ConditionalOnBean
 import org.springframework.boot.autoconfigure.condition.ConditionalOnClass
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean
 import org.springframework.boot.context.properties.EnableConfigurationProperties
 import org.springframework.boot.hibernate.autoconfigure.HibernatePropertiesCustomizer
+import org.springframework.boot.micrometer.metrics.autoconfigure.CompositeMeterRegistryAutoConfiguration
 import org.springframework.context.annotation.Bean
 import org.springframework.data.domain.AuditorAware
 import org.springframework.data.jpa.domain.support.AuditingEntityListener
 
-@AutoConfiguration
-@AutoConfigureAfter(AuthorizationRestClientConfiguration::class)
+// After Boot's MeterRegistry, so @ConditionalOnBean(MeterRegistry::class) on auditMetrics sees it.
+@AutoConfiguration(
+    after = [AuthorizationRestClientConfiguration::class, CompositeMeterRegistryAutoConfiguration::class],
+)
 @ConditionalOnClass(AuditingEntityListener::class)
 @EnableConfigurationProperties(ActorDisplayProperties::class)
 class FlytAuditAutoConfiguration {

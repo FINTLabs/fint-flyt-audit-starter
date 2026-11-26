@@ -36,7 +36,7 @@ dependencies {
 }
 ```
 
-Published to `https://repo.fintlabs.no/releases`. Requires Spring Boot 4 and JDK 25 or newer.
+Published to `https://repo.fintlabs.no/releases`. Requires Spring Boot 4.2 or newer and Java 25 or newer (the published bytecode is Java 25).
 
 ## Getting started
 
@@ -133,8 +133,8 @@ order is fixed: the newest revision is always first, and request parameters cann
 
 > **Access control:** the starter adds no authentication or authorization to the history endpoints. The app must
 > secure them, typically by mounting the controller under an internal path prefix secured by the service's own
-> resource server (`no.novari:flyt-web-resource-server`), e.g. `no.novari.flyt.webresourceserver.UrlPaths.INTERNAL_API`
-> (which requires a valid user JWT and the `USER` role), or with its own Spring Security configuration.
+> resource server (`no.novari:flyt-security-starter`), e.g. `no.novari.flyt.security.UrlPaths.INTERNAL_API` (which
+> requires a valid user JWT and the `USER` role), or with its own Spring Security configuration.
 
 ## Actor in asynchronous consumers
 

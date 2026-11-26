@@ -13,6 +13,9 @@ import org.mockito.Mockito.mock
 import org.springframework.beans.factory.getBean
 import org.springframework.boot.autoconfigure.AutoConfigurations
 import org.springframework.boot.hibernate.autoconfigure.HibernatePropertiesCustomizer
+import org.springframework.boot.micrometer.metrics.autoconfigure.CompositeMeterRegistryAutoConfiguration
+import org.springframework.boot.micrometer.metrics.autoconfigure.MetricsAutoConfiguration
+import org.springframework.boot.micrometer.metrics.autoconfigure.export.simple.SimpleMetricsExportAutoConfiguration
 import org.springframework.boot.test.context.runner.ApplicationContextRunner
 import org.springframework.context.annotation.Bean
 import org.springframework.context.annotation.Configuration
@@ -49,6 +52,20 @@ class FlytAuditAutoConfigurationTest {
             .run { context ->
                 assertThat(context).hasSingleBean(AuditMetrics::class.java)
             }
+    }
+
+    @Test
+    fun `auditMetrics bean is registered with Boot's own MeterRegistry`() {
+        // Listed first on purpose: the auto-configuration order must put it after the registry.
+        ApplicationContextRunner()
+            .withConfiguration(
+                AutoConfigurations.of(
+                    FlytAuditAutoConfiguration::class.java,
+                    MetricsAutoConfiguration::class.java,
+                    SimpleMetricsExportAutoConfiguration::class.java,
+                    CompositeMeterRegistryAutoConfiguration::class.java,
+                ),
+            ).run { context -> assertThat(context).hasSingleBean(AuditMetrics::class.java) }
     }
 
     @Test

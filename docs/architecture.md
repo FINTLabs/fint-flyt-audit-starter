@@ -54,7 +54,7 @@ C4Component
 - **Recording the actor.** Entities extend `CreatedAuditedEntity` or `AuditedEntity`. Spring Data JPA auditing asks
   `ActorAuditorAware` for `createdBy` and `lastModifiedBy` when an entity is persisted or updated. It uses the actor bound
   by `ActorContext.withActor` (for Kafka listeners, from the `flyt.actor` header), then the JWT in the security context,
-  and otherwise `Actor.System`. For `@Audited` entities, Envers creates a revision when the transaction is flushed, and
+  and otherwise `Actor.System`. For `@Audited` entities, Envers creates a revision when the transaction commits, and
   `ActorRevisionListener` stores the same actor in `revinfo`. Hibernate creates the listener through Spring's bean
   container, so it gets `flytAuditorAware` injected. `AuditMetricsListener` counts writes in the same way.
 - **Reading history.** `EnversHistoryService` reads revisions with the Envers `AuditReader`, newest first, and
