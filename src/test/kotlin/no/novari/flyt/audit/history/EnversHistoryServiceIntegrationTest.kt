@@ -122,6 +122,37 @@ class EnversHistoryServiceIntegrationTest {
         assertThat(page.content.first().snapshot).isNull()
     }
 
+    // Controllers call the service without a transaction. Open-in-view does not help for a persistence unit that is
+    // not the primary one, so the service must not depend on a transaction-bound EntityManager.
+    @Test
+    fun `history can be read outside a transaction`() {
+        setJwtWithOid(userOid)
+        val saved = entityRepository.saveAndFlush(RevisedTestEntity().apply { name = "v1" })
+        saved.name = "v2"
+        entityRepository.saveAndFlush(saved)
+
+        val page = historyService.findHistory(saved.id!!, PageRequest.of(0, 20))
+
+        assertThat(page.totalElements).isEqualTo(2)
+        assertThat(page.content.map { it.snapshot?.name }).containsExactly("v2", "v1")
+    }
+
+    @Test
+    fun `all history with a property filter can be read outside a transaction`() {
+        setJwtWithOid(userOid)
+        val kept = entityRepository.saveAndFlush(RevisedTestEntity().apply { name = "kept" })
+        entityRepository.saveAndFlush(RevisedTestEntity().apply { name = "filtered" })
+
+        val page =
+            historyService.findAllHistory(
+                PageRequest.of(0, 20),
+                propertyFilter = AuditPropertyFilter(property = "name", allowedValues = listOf("kept")),
+            )
+
+        assertThat(page.totalElements).isEqualTo(1)
+        assertThat(page.content.single().entityId).isEqualTo(kept.id)
+    }
+
     @Test
     fun `System actor gets its display value from ActorDisplayResolver`() {
         SecurityContextHolder.clearContext()

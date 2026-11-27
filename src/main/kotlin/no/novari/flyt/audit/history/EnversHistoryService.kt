@@ -3,6 +3,7 @@ package no.novari.flyt.audit.history
 import jakarta.persistence.EntityManager
 import no.novari.flyt.audit.actor.ActorDisplayResolver
 import no.novari.flyt.audit.revision.ActorRevisionEntity
+import org.hibernate.envers.AuditReader
 import org.hibernate.envers.AuditReaderFactory
 import org.hibernate.envers.RevisionType
 import org.hibernate.envers.query.AuditEntity
@@ -32,6 +33,9 @@ import java.time.Instant
  * }
  * ```
  *
+ * Each call reads through its own `EntityManager` from the factory, so it works outside a transaction and for a
+ * persistence unit that open-in-view does not keep open (only the primary one is).
+ *
  * Results are always newest revision first (fixed order, cannot be overridden).
  * Actor names are resolved in one batch call per page through [ActorDisplayResolver], to avoid
  * N+1 calls to `fint-flyt-authorization-service`.
@@ -52,9 +56,17 @@ abstract class EnversHistoryService<T : Any, ID : Any, S : Any>(
         id: ID,
         pageable: Pageable,
         filter: HistoryFilter = HistoryFilter(),
-    ): Page<HistoryEntryDto<S>> {
-        val reader = AuditReaderFactory.get(entityManager)
+    ): Page<HistoryEntryDto<S>> =
+        withReader { reader, _ ->
+            findHistory(reader, id, pageable, filter)
+        }
 
+    private fun findHistory(
+        reader: AuditReader,
+        id: ID,
+        pageable: Pageable,
+        filter: HistoryFilter,
+    ): Page<HistoryEntryDto<S>> {
         val query =
             reader
                 .createQuery()
@@ -92,7 +104,7 @@ abstract class EnversHistoryService<T : Any, ID : Any, S : Any>(
                 )
             }
 
-        return PageImpl(content, pageable, countRevisions(id, filter))
+        return PageImpl(content, pageable, countRevisions(reader, id, filter))
     }
 
     open fun findAllHistory(
@@ -104,8 +116,18 @@ abstract class EnversHistoryService<T : Any, ID : Any, S : Any>(
             return PageImpl(emptyList(), pageable, 0)
         }
 
-        val reader = AuditReaderFactory.get(entityManager)
+        return withReader { reader, readerEntityManager ->
+            findAllHistory(reader, readerEntityManager, pageable, filter, propertyFilter)
+        }
+    }
 
+    private fun findAllHistory(
+        reader: AuditReader,
+        readerEntityManager: EntityManager,
+        pageable: Pageable,
+        filter: HistoryFilter,
+        propertyFilter: AuditPropertyFilter?,
+    ): Page<EntityHistoryEntryDto<S, ID>> {
         val query =
             reader
                 .createQuery()
@@ -137,7 +159,7 @@ abstract class EnversHistoryService<T : Any, ID : Any, S : Any>(
                 val revisionType = row[2] as RevisionType
 
                 @Suppress("UNCHECKED_CAST")
-                val entityId = entityManager.entityManagerFactory.persistenceUnitUtil.getIdentifier(row[0]) as ID
+                val entityId = readerEntityManager.entityManagerFactory.persistenceUnitUtil.getIdentifier(row[0]) as ID
 
                 EntityHistoryEntryDto(
                     entityId = entityId,
@@ -149,8 +171,15 @@ abstract class EnversHistoryService<T : Any, ID : Any, S : Any>(
                 )
             }
 
-        return PageImpl(content, pageable, countAllRevisions(filter, propertyFilter))
+        return PageImpl(content, pageable, countAllRevisions(reader, filter, propertyFilter))
     }
+
+    // The shared EntityManager proxy gives a new, already closed EntityManager outside a transaction, and Envers keeps
+    // it. Snapshots are mapped before this one is closed, so lazy fields can still be read.
+    private fun <R> withReader(block: (AuditReader, EntityManager) -> R): R =
+        entityManager.entityManagerFactory.createEntityManager().use { readerEntityManager ->
+            block(AuditReaderFactory.get(readerEntityManager), readerEntityManager)
+        }
 
     // Envers returns a partly filled object (only id) for DEL revisions,
     // so a null snapshot is more honest for deleted entries.
@@ -165,11 +194,10 @@ abstract class EnversHistoryService<T : Any, ID : Any, S : Any>(
     }
 
     private fun countRevisions(
+        reader: AuditReader,
         id: ID,
         filter: HistoryFilter,
     ): Long {
-        val reader = AuditReaderFactory.get(entityManager)
-
         val query =
             reader
                 .createQuery()
@@ -188,11 +216,10 @@ abstract class EnversHistoryService<T : Any, ID : Any, S : Any>(
     }
 
     private fun countAllRevisions(
+        reader: AuditReader,
         filter: HistoryFilter,
         propertyFilter: AuditPropertyFilter?,
     ): Long {
-        val reader = AuditReaderFactory.get(entityManager)
-
         val query =
             reader
                 .createQuery()
