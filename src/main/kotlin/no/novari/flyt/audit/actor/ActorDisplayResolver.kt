@@ -1,17 +1,18 @@
 package no.novari.flyt.audit.actor
 
+import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 import java.util.UUID
 
 /**
- * Mapper [Actor] → visningsnavn for REST-DTOer.
+ * Maps [Actor] to a display name for REST DTOs.
  *
- * Brukes fra tjenestens mapping-lag når `createdBy`/`lastModifiedBy` skal
- * eksponeres som streng mot web. For listeresponser bør [resolveAll] brukes
- * for å unngå N+1-oppslag mot [ActorNameLookup].
+ * Used from the service's mapping layer when `createdBy`/`lastModifiedBy` is
+ * exposed as a string. Use [resolveAll] for lists,
+ * to avoid N+1 lookups in [ActorNameLookup].
  *
- * Fallback-verdier for `System`, `Unknown`, `M2M` og "bruker ikke funnet"
- * styres av [ActorDisplayProperties] — kan overstyres per tjeneste.
+ * The fallback values for `System`, `Unknown`, `M2M` and "user not found"
+ * come from [ActorDisplayProperties] and can be overridden per service.
  */
 class ActorDisplayResolver(
     private val lookup: ActorNameLookup,
@@ -50,12 +51,12 @@ class ActorDisplayResolver(
         return try {
             lookup.lookupNames(oids)
         } catch (ex: Exception) {
-            logger.warn("Klarte ikke hydrere {} aktør-navn — bruker fallback", oids.size, ex)
+            logger.warn("Could not resolve {} actor names, using the fallback", oids.size, ex)
             emptyMap()
         }
     }
 
     private companion object {
-        val logger = LoggerFactory.getLogger(ActorDisplayResolver::class.java)
+        val logger: Logger = LoggerFactory.getLogger(ActorDisplayResolver::class.java)
     }
 }

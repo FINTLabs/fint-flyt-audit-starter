@@ -8,7 +8,7 @@ class ActorDisplayResolverTest {
     private val defaults = ActorDisplayProperties()
 
     @Test
-    fun `User med kjent oid hydreres med navn`() {
+    fun `User with a known oid is resolved to a name`() {
         val oid = UUID.randomUUID()
         val resolver = ActorDisplayResolver(ActorNameLookup { mapOf(oid to "Ola Nordmann") }, defaults)
 
@@ -16,35 +16,35 @@ class ActorDisplayResolverTest {
     }
 
     @Test
-    fun `User med ukjent oid faller tilbake til unknownUser (default null)`() {
+    fun `User with an unknown oid falls back to unknownUser (null by default)`() {
         val resolver = ActorDisplayResolver(ActorNameLookup { emptyMap() }, defaults)
 
         assertThat(resolver.resolve(Actor.User(UUID.randomUUID()))).isNull()
     }
 
     @Test
-    fun `System bruker default norsk fallback`() {
+    fun `System uses the default Norwegian fallback`() {
         val resolver = ActorDisplayResolver(ActorNameLookup { emptyMap() }, defaults)
 
         assertThat(resolver.resolve(Actor.System)).isEqualTo("System")
     }
 
     @Test
-    fun `Unknown bruker default norsk fallback`() {
+    fun `Unknown uses the default Norwegian fallback`() {
         val resolver = ActorDisplayResolver(ActorNameLookup { emptyMap() }, defaults)
 
         assertThat(resolver.resolve(Actor.Unknown)).isEqualTo("Ukjent")
     }
 
     @Test
-    fun `M2M returnerer clientId når properties m2m er null`() {
+    fun `M2M returns clientId when the m2m property is null`() {
         val resolver = ActorDisplayResolver(ActorNameLookup { emptyMap() }, defaults)
 
         assertThat(resolver.resolve(Actor.M2M("integrasjon-x"))).isEqualTo("integrasjon-x")
     }
 
     @Test
-    fun `M2M kan overstyres via properties`() {
+    fun `M2M can be overridden with properties`() {
         val props = ActorDisplayProperties(m2m = "Systemintegrasjon")
         val resolver = ActorDisplayResolver(ActorNameLookup { emptyMap() }, props)
 
@@ -52,7 +52,7 @@ class ActorDisplayResolverTest {
     }
 
     @Test
-    fun `Unknown-string kan overstyres til null via properties`() {
+    fun `Unknown string can be overridden to null with properties`() {
         val props = ActorDisplayProperties(unknown = null)
         val resolver = ActorDisplayResolver(ActorNameLookup { emptyMap() }, props)
 
@@ -60,14 +60,14 @@ class ActorDisplayResolverTest {
     }
 
     @Test
-    fun `null-input propagerer til null`() {
+    fun `null input gives null`() {
         val resolver = ActorDisplayResolver(ActorNameLookup { emptyMap() }, defaults)
 
         assertThat(resolver.resolve(null)).isNull()
     }
 
     @Test
-    fun `resolveAll gjør ett batch-kall for alle User-aktører`() {
+    fun `resolveAll makes one batch call for all User actors`() {
         val oid1 = UUID.randomUUID()
         val oid2 = UUID.randomUUID()
         var invocations = 0
@@ -101,7 +101,7 @@ class ActorDisplayResolverTest {
     }
 
     @Test
-    fun `resolveAll uten User-aktører gjør ingen lookup`() {
+    fun `resolveAll without User actors makes no lookup`() {
         var invocations = 0
         val lookup =
             ActorNameLookup { oids ->
@@ -116,7 +116,7 @@ class ActorDisplayResolverTest {
     }
 
     @Test
-    fun `resolve failsafe når lookup kaster returnerer unknownUser fallback`() {
+    fun `resolve returns the unknownUser fallback when the lookup throws`() {
         val resolver =
             ActorDisplayResolver(
                 ActorNameLookup { throw RuntimeException("auth-service nede") },
@@ -127,7 +127,7 @@ class ActorDisplayResolverTest {
     }
 
     @Test
-    fun `resolveAll failsafe når lookup kaster returnerer fallback for User`() {
+    fun `resolveAll returns the fallback for User when the lookup throws`() {
         val oid = UUID.randomUUID()
         val resolver =
             ActorDisplayResolver(

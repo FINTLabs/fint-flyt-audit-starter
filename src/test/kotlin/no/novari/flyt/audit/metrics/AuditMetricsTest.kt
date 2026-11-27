@@ -9,7 +9,7 @@ class AuditMetricsTest {
     private val metrics = AuditMetrics(registry)
 
     @Test
-    fun `recordWrite inkrementerer skriveteller for entitet`() {
+    fun `recordWrite increments the write counter for the entity`() {
         metrics.recordWrite("SomeEntity")
         val count =
             registry
@@ -19,7 +19,7 @@ class AuditMetricsTest {
     }
 
     @Test
-    fun `tellere er uavhengige per entity`() {
+    fun `counters are independent per entity`() {
         metrics.recordWrite("EntityA")
         metrics.recordWrite("EntityA")
         metrics.recordWrite("EntityB")

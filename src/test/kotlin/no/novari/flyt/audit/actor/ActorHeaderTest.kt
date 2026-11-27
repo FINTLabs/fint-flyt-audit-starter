@@ -7,12 +7,12 @@ import java.util.UUID
 
 class ActorHeaderTest {
     @Test
-    fun `header-navnet er flyt actor`() {
+    fun `the header name is flyt-actor`() {
         assertThat(ActorHeader.HEADER_NAME).isEqualTo("flyt.actor")
     }
 
     @Test
-    fun `User serialiseres til header-verdi med samme kontrakt som JSONB`() {
+    fun `User is serialized to a header value with the same contract as JSONB`() {
         val oid = UUID.fromString("a1b2c3d4-e5f6-7890-abcd-ef1234567890")
         val value = ActorHeader.toHeaderValue(Actor.User(oid))
 
@@ -20,7 +20,7 @@ class ActorHeaderTest {
     }
 
     @Test
-    fun `header-verdi roundtripper alle aktortyper`() {
+    fun `header value round trips all actor types`() {
         val actors =
             listOf(
                 Actor.User(UUID.randomUUID()),
@@ -35,7 +35,7 @@ class ActorHeaderTest {
     }
 
     @Test
-    fun `fromHeaderValueOrNull returnerer null for manglende eller ugyldig header`() {
+    fun `fromHeaderValueOrNull returns null for a missing or invalid header`() {
         assertThat(ActorHeader.fromHeaderValueOrNull(null as ByteArray?)).isNull()
         assertThat(ActorHeader.fromHeaderValueOrNull("ikke-json")).isNull()
     }

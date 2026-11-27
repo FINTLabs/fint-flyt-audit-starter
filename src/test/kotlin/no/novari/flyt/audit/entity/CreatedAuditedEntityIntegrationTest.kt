@@ -6,16 +6,16 @@ import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.Test
 import org.springframework.beans.factory.annotation.Autowired
-import org.springframework.boot.test.autoconfigure.jdbc.AutoConfigureTestDatabase
-import org.springframework.boot.test.autoconfigure.orm.jpa.DataJpaTest
+import org.springframework.boot.data.jpa.test.autoconfigure.DataJpaTest
+import org.springframework.boot.jdbc.test.autoconfigure.AutoConfigureTestDatabase
 import org.springframework.boot.testcontainers.service.connection.ServiceConnection
 import org.springframework.context.annotation.Import
 import org.springframework.security.authentication.TestingAuthenticationToken
 import org.springframework.security.core.context.SecurityContextHolder
 import org.springframework.security.oauth2.jwt.Jwt
-import org.testcontainers.containers.PostgreSQLContainer
 import org.testcontainers.junit.jupiter.Container
 import org.testcontainers.junit.jupiter.Testcontainers
+import org.testcontainers.postgresql.PostgreSQLContainer
 import java.time.Instant
 import java.util.UUID
 
@@ -30,11 +30,10 @@ class CreatedAuditedEntityIntegrationTest {
     @AfterEach
     fun clearSecurityContext() {
         SecurityContextHolder.clearContext()
-        ActorContext.clear()
     }
 
     @Test
-    fun `createdAt og createdBy settes ved lagring`() {
+    fun `createdAt and createdBy are set on save`() {
         val oid = UUID.randomUUID()
         setJwtWithOid(oid)
 
@@ -45,7 +44,7 @@ class CreatedAuditedEntityIntegrationTest {
     }
 
     @Test
-    fun `createdBy er Actor-System uten sikkerhetskontekst`() {
+    fun `createdBy is Actor System without a security context`() {
         SecurityContextHolder.clearContext()
 
         val saved = repository.saveAndFlush(CreatedTestEntity())
@@ -54,7 +53,7 @@ class CreatedAuditedEntityIntegrationTest {
     }
 
     @Test
-    fun `createdBy settes fra scoped aktør uten sikkerhetskontekst`() {
+    fun `createdBy is set from the scoped actor without a security context`() {
         val actor = Actor.User(UUID.randomUUID())
         SecurityContextHolder.clearContext()
 
@@ -83,6 +82,6 @@ class CreatedAuditedEntityIntegrationTest {
         @Container
         @ServiceConnection
         @JvmStatic
-        val postgres: PostgreSQLContainer<*> = PostgreSQLContainer("postgres:17-alpine")
+        val postgres: PostgreSQLContainer = PostgreSQLContainer("postgres:17-alpine")
     }
 }

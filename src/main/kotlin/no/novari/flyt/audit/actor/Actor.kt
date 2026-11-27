@@ -7,11 +7,11 @@ import java.io.Serializable
 import java.util.UUID
 
 /**
- * Aktør som har utført en endring fanget av endringsloggen.
+ * The actor that made a change recorded in the change log.
  *
- * Serialiseres som JSONB. For brukere lagres kun OID (object identifier fra Entra) —
- * persondata som navn og e-post lagres ikke, men hentes ved presentasjons-tid fra
- * `fint-flyt-authorization-service`. Se løsningsanalysen §3.5.6.
+ * Stored as JSONB. For users only the OID (object identifier from Entra) is stored.
+ * Personal data such as name and e-mail is not stored, but looked up at presentation time in
+ * `fint-flyt-authorization-service`.
  *
  * JSON-format:
  * ```

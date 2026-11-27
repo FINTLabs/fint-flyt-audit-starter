@@ -3,13 +3,13 @@ package no.novari.flyt.audit.metrics
 import io.micrometer.core.instrument.MeterRegistry
 
 /**
- * Micrometer-metrikker for JPA-skriveoperasjoner.
+ * Micrometer metrics for JPA writes.
  *
- * Registreres automatisk av `FlytAuditAutoConfiguration` når en `MeterRegistry`-bønne er tilgjengelig.
+ * Registered by `FlytAuditAutoConfiguration` when a `MeterRegistry` bean exists.
  *
- * Metrikker:
- * - `fint_flyt_audit_write_total` — teller per entitet (tag: `entity=<klassenavn>`).
- *   Prometheus-suffikset `_total` legges til automatisk av Micrometer.
+ * Metrics:
+ * - `fint_flyt_audit_write_total`: counter per entity (tag `entity=<class name>`).
+ *   Micrometer adds the Prometheus suffix `_total`.
  */
 class AuditMetrics(
     private val registry: MeterRegistry,

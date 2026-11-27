@@ -1,7 +1,6 @@
 package no.novari.flyt.audit.metrics
 
 import io.micrometer.core.instrument.simple.SimpleMeterRegistry
-import no.novari.flyt.audit.config.ApplicationContextHolder
 import no.novari.flyt.audit.entity.AuditTestConfig
 import no.novari.flyt.audit.entity.AuditedTestEntity
 import no.novari.flyt.audit.entity.AuditedTestEntityRepository
@@ -9,8 +8,8 @@ import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.Test
 import org.springframework.beans.factory.annotation.Autowired
-import org.springframework.boot.test.autoconfigure.jdbc.AutoConfigureTestDatabase
-import org.springframework.boot.test.autoconfigure.orm.jpa.DataJpaTest
+import org.springframework.boot.data.jpa.test.autoconfigure.DataJpaTest
+import org.springframework.boot.jdbc.test.autoconfigure.AutoConfigureTestDatabase
 import org.springframework.boot.test.context.TestConfiguration
 import org.springframework.boot.testcontainers.service.connection.ServiceConnection
 import org.springframework.context.annotation.Bean
@@ -18,16 +17,16 @@ import org.springframework.context.annotation.Import
 import org.springframework.security.authentication.TestingAuthenticationToken
 import org.springframework.security.core.context.SecurityContextHolder
 import org.springframework.security.oauth2.jwt.Jwt
-import org.testcontainers.containers.PostgreSQLContainer
 import org.testcontainers.junit.jupiter.Container
 import org.testcontainers.junit.jupiter.Testcontainers
+import org.testcontainers.postgresql.PostgreSQLContainer
 import java.time.Instant
 import java.util.UUID
 
 @DataJpaTest
 @AutoConfigureTestDatabase(replace = AutoConfigureTestDatabase.Replace.NONE)
 @Testcontainers
-@Import(AuditTestConfig::class, ApplicationContextHolder::class, AuditMetricsListenerIntegrationTest.MetricsConfig::class)
+@Import(AuditTestConfig::class, AuditMetricsListenerIntegrationTest.MetricsConfig::class)
 class AuditMetricsListenerIntegrationTest {
     @TestConfiguration
     class MetricsConfig {
@@ -50,7 +49,7 @@ class AuditMetricsListenerIntegrationTest {
     }
 
     @Test
-    fun `AuditMetricsListener inkrementerer skriveteller ved lagring`() {
+    fun `AuditMetricsListener increments the write counter on save`() {
         setJwt()
         repository.saveAndFlush(AuditedTestEntity().apply { value = "first" })
 
@@ -62,7 +61,7 @@ class AuditMetricsListenerIntegrationTest {
     }
 
     @Test
-    fun `AuditMetricsListener inkrementerer teller ved oppdatering`() {
+    fun `AuditMetricsListener increments the counter on update`() {
         setJwt()
         val saved = repository.saveAndFlush(AuditedTestEntity().apply { value = "initial" })
         val afterInsert =
@@ -96,6 +95,6 @@ class AuditMetricsListenerIntegrationTest {
         @Container
         @ServiceConnection
         @JvmStatic
-        val postgres: PostgreSQLContainer<*> = PostgreSQLContainer("postgres:17-alpine")
+        val postgres: PostgreSQLContainer = PostgreSQLContainer("postgres:17-alpine")
     }
 }

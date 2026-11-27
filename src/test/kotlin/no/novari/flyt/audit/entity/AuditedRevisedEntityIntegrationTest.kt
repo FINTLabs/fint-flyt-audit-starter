@@ -6,7 +6,6 @@ import no.novari.flyt.audit.actor.ActorDisplayResolver
 import no.novari.flyt.audit.actor.HttpActorNameLookup
 import no.novari.flyt.audit.authorization.AuthorizationClient
 import no.novari.flyt.audit.authorization.AuthorizedUserDto
-import no.novari.flyt.audit.config.ApplicationContextHolder
 import no.novari.flyt.audit.history.EnversHistoryService
 import no.novari.flyt.audit.history.HistoryEventType
 import no.novari.flyt.audit.history.HistoryFilter
@@ -15,8 +14,8 @@ import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.springframework.beans.factory.annotation.Autowired
-import org.springframework.boot.test.autoconfigure.jdbc.AutoConfigureTestDatabase
-import org.springframework.boot.test.autoconfigure.orm.jpa.DataJpaTest
+import org.springframework.boot.data.jpa.test.autoconfigure.DataJpaTest
+import org.springframework.boot.jdbc.test.autoconfigure.AutoConfigureTestDatabase
 import org.springframework.boot.testcontainers.service.connection.ServiceConnection
 import org.springframework.context.annotation.Import
 import org.springframework.data.domain.PageRequest
@@ -28,9 +27,9 @@ import org.springframework.transaction.PlatformTransactionManager
 import org.springframework.transaction.annotation.Propagation
 import org.springframework.transaction.annotation.Transactional
 import org.springframework.transaction.support.TransactionTemplate
-import org.testcontainers.containers.PostgreSQLContainer
 import org.testcontainers.junit.jupiter.Container
 import org.testcontainers.junit.jupiter.Testcontainers
+import org.testcontainers.postgresql.PostgreSQLContainer
 import java.time.Instant
 import java.util.UUID
 
@@ -43,7 +42,7 @@ import java.util.UUID
 @DataJpaTest
 @AutoConfigureTestDatabase(replace = AutoConfigureTestDatabase.Replace.NONE)
 @Testcontainers
-@Import(AuditTestConfig::class, ApplicationContextHolder::class)
+@Import(AuditTestConfig::class)
 @Transactional(propagation = Propagation.NOT_SUPPORTED)
 class AuditedRevisedEntityIntegrationTest {
     @Autowired
@@ -65,7 +64,7 @@ class AuditedRevisedEntityIntegrationTest {
         object : AuthorizationClient {
             override fun findByObjectIdentifier(oid: UUID) = null
 
-            override fun lookupUsers(oids: List<UUID>) = oids.map { AuthorizedUserDto(it, "Test Bruker") }
+            override fun lookupUsers(oids: List<UUID>) = oids.map { AuthorizedUserDto(it, "Test User") }
         }
 
     private lateinit var historyService: EnversHistoryService<AuditedRevisedTestEntity, Long, AuditedRevisedTestEntity>
@@ -92,7 +91,7 @@ class AuditedRevisedEntityIntegrationTest {
     }
 
     @Test
-    fun `_aud-tabell inneholder ikke audit-kolonner (created_at, created_by, last_modified_at, last_modified_by)`() {
+    fun `_aud table has no audit columns (created_at, created_by, last_modified_at, last_modified_by)`() {
         setJwtWithOid(userOid)
         entityRepository.saveAndFlush(AuditedRevisedTestEntity().apply { name = "v1" })
 
@@ -107,7 +106,7 @@ class AuditedRevisedEntityIntegrationTest {
     }
 
     @Test
-    fun `historikk returneres korrekt for entitet som kombinerer @Audited og AuditedEntity`() {
+    fun `history is correct for an entity that combines @Audited and AuditedEntity`() {
         setJwtWithOid(userOid)
         val saved = entityRepository.saveAndFlush(AuditedRevisedTestEntity().apply { name = "v1" })
         val id = saved.id!!
@@ -124,7 +123,7 @@ class AuditedRevisedEntityIntegrationTest {
     }
 
     @Test
-    fun `audit-kolonner på entity-tabellen er fortsatt populert`() {
+    fun `audit columns on the entity table are still set`() {
         setJwtWithOid(userOid)
         val saved = entityRepository.saveAndFlush(AuditedRevisedTestEntity().apply { name = "v1" })
 
@@ -140,7 +139,7 @@ class AuditedRevisedEntityIntegrationTest {
         filter: HistoryFilter = HistoryFilter(),
     ) = transactionTemplate.execute {
         historyService.findHistory(id, pageable, filter)
-    }!!
+    }
 
     private fun setJwtWithOid(oid: UUID) {
         val jwt =
@@ -158,6 +157,6 @@ class AuditedRevisedEntityIntegrationTest {
         @Container
         @ServiceConnection
         @JvmStatic
-        val postgres: PostgreSQLContainer<*> = PostgreSQLContainer("postgres:17-alpine")
+        val postgres: PostgreSQLContainer = PostgreSQLContainer("postgres:17-alpine")
     }
 }

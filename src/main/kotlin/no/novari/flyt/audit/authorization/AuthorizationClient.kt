@@ -3,11 +3,11 @@ package no.novari.flyt.audit.authorization
 import java.util.UUID
 
 /**
- * Klient for å slå opp brukernavn fra auth-service basert på OID.
+ * Client that looks up user names in authorization-service by OID.
  *
- * Brukes via [no.novari.flyt.audit.actor.HttpActorNameLookup] for å hydrere visningsnavn.
- * Standardimplementasjonen kaller `POST /api/intern-klient/authorization/users/actions/lookup`.
- * Kan pakkes inn med [CachingAuthorizationClient] for å redusere antall kall mot auth-service.
+ * Used by [no.novari.flyt.audit.actor.HttpActorNameLookup] to resolve display names.
+ * The default implementation calls `POST /api/intern-klient/authorization/users/actions/lookup`.
+ * Can be wrapped in [CachingAuthorizationClient] to reduce calls to authorization-service.
  */
 interface AuthorizationClient {
     fun findByObjectIdentifier(oid: UUID): AuthorizedUserDto?

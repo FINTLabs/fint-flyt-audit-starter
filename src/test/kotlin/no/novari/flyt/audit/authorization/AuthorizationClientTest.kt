@@ -1,13 +1,12 @@
 package no.novari.flyt.audit.authorization
 
-import com.fasterxml.jackson.databind.ObjectMapper
 import org.assertj.core.api.Assertions.assertThat
 import org.assertj.core.api.Assertions.assertThatThrownBy
 import org.junit.jupiter.api.Test
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.beans.factory.annotation.Qualifier
 import org.springframework.boot.context.properties.EnableConfigurationProperties
-import org.springframework.boot.test.autoconfigure.web.client.RestClientTest
+import org.springframework.boot.restclient.test.autoconfigure.RestClientTest
 import org.springframework.boot.test.context.TestConfiguration
 import org.springframework.context.annotation.Bean
 import org.springframework.http.MediaType
@@ -19,6 +18,7 @@ import org.springframework.test.web.client.response.MockRestResponseCreators.wit
 import org.springframework.test.web.client.response.MockRestResponseCreators.withSuccess
 import org.springframework.web.client.RestClient
 import org.springframework.web.client.RestClientResponseException
+import tools.jackson.databind.ObjectMapper
 import java.util.UUID
 
 @RestClientTest
@@ -54,7 +54,7 @@ class AuthorizationClientTest {
     lateinit var mapper: ObjectMapper
 
     @Test
-    fun `findByObjectIdentifier returnerer bruker ved 200`() {
+    fun `findByObjectIdentifier returns the user on 200`() {
         val oid = UUID.randomUUID()
         val dto = AuthorizedUserDto(objectIdentifier = oid, name = "Ola Nordmann")
 
@@ -68,7 +68,7 @@ class AuthorizationClientTest {
     }
 
     @Test
-    fun `findByObjectIdentifier returnerer null ved 404`() {
+    fun `findByObjectIdentifier returns null on 404`() {
         val oid = UUID.randomUUID()
 
         server
@@ -81,7 +81,7 @@ class AuthorizationClientTest {
     }
 
     @Test
-    fun `findByObjectIdentifier kaster videre ved annen HTTP-feil enn 404`() {
+    fun `findByObjectIdentifier rethrows HTTP errors other than 404`() {
         val oid = UUID.randomUUID()
 
         server
@@ -93,7 +93,7 @@ class AuthorizationClientTest {
     }
 
     @Test
-    fun `lookupUsers returnerer liste ved batch-oppslag`() {
+    fun `lookupUsers returns a list for a batch lookup`() {
         val oid1 = UUID.randomUUID()
         val oid2 = UUID.randomUUID()
         val dtos =
@@ -112,7 +112,7 @@ class AuthorizationClientTest {
     }
 
     @Test
-    fun `lookupUsers returnerer tom liste ved tom inndata`() {
+    fun `lookupUsers returns an empty list for empty input`() {
         val result = client.lookupUsers(emptyList())
 
         assertThat(result).isEmpty()

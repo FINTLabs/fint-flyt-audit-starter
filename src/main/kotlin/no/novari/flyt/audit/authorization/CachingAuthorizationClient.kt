@@ -1,33 +1,31 @@
 package no.novari.flyt.audit.authorization
 
 import com.github.benmanes.caffeine.cache.Caffeine
-import java.util.Optional
 import java.util.UUID
 
 /**
- * Caffeine-cachelag rundt [AuthorizationClient] for å begrense kall mot authorization-service.
+ * Caffeine cache around [AuthorizationClient] that limits calls to authorization-service.
  *
- * Cache-nøkkel er OID; verdien er `Optional<AuthorizedUserDto>` der tom Optional betyr at OID
- * ikke finnes. TTL og maks størrelse styres av [AuthorizationProperties.Cache].
- * Aktiveres automatisk via `flyt.audit.authorization.cache.enabled=true` (default).
+ * The key is the OID. A [CachedUser] without a user means the OID does not exist, since Caffeine cannot hold
+ * `null`. Time to live and maximum size come from [AuthorizationProperties.Cache].
+ * Enabled by `novari.flyt.audit.authorization.cache.enabled=true` (the default).
  */
 class CachingAuthorizationClient(
     private val delegate: AuthorizationClient,
     props: AuthorizationProperties.Cache,
 ) : AuthorizationClient {
-    // Optional.empty() = OID finnes ikke; Optional.of(dto) = funnet (name kan være null)
     private val cache =
         Caffeine
             .newBuilder()
             .maximumSize(props.maxSize)
             .expireAfterWrite(props.ttl)
-            .build<UUID, Optional<AuthorizedUserDto>>()
+            .build<UUID, CachedUser>()
 
     override fun findByObjectIdentifier(oid: UUID): AuthorizedUserDto? {
         val cached = cache.getIfPresent(oid)
-        if (cached != null) return cached.orElse(null)
+        if (cached != null) return cached.user
         val result = delegate.findByObjectIdentifier(oid)
-        cache.put(oid, Optional.ofNullable(result))
+        cache.put(oid, CachedUser(result))
         return result
     }
 
@@ -40,7 +38,7 @@ class CachingAuthorizationClient(
             val hit = cache.getIfPresent(oid)
             when {
                 hit == null -> missing.add(oid)
-                hit.isPresent -> result.add(hit.get())
+                hit.user != null -> result.add(hit.user)
             }
         }
 
@@ -49,10 +47,14 @@ class CachingAuthorizationClient(
         val fetched = delegate.lookupUsers(missing)
         val byOid = fetched.associateBy { it.objectIdentifier }
         for (oid in missing) {
-            cache.put(oid, Optional.ofNullable(byOid[oid]))
+            cache.put(oid, CachedUser(byOid[oid]))
             byOid[oid]?.let { result.add(it) }
         }
 
         return result
     }
 }
+
+private class CachedUser(
+    val user: AuthorizedUserDto?,
+)

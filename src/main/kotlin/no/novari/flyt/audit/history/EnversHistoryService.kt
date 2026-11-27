@@ -3,6 +3,7 @@ package no.novari.flyt.audit.history
 import jakarta.persistence.EntityManager
 import no.novari.flyt.audit.actor.ActorDisplayResolver
 import no.novari.flyt.audit.revision.ActorRevisionEntity
+import org.hibernate.envers.AuditReader
 import org.hibernate.envers.AuditReaderFactory
 import org.hibernate.envers.RevisionType
 import org.hibernate.envers.query.AuditEntity
@@ -12,29 +13,32 @@ import org.springframework.data.domain.Pageable
 import java.time.Instant
 
 /**
- * Generisk basistjeneste for å lese endringshistorikk fra Hibernate Envers.
+ * Generic base service that reads change history from Hibernate Envers.
  *
- * Tre type-parametere: `T` er den auditerte entiteten, `ID` er nøkkeltypen, og `S`
- * er formen på `snapshot` i responsen. Konsumenten må implementere [mapSnapshot] og velger
- * dermed bevisst hva som eksponeres — enten en trygg DTO (unngår at lazy-relasjoner, interne
- * felt eller PII lekker rått i REST-kontrakten), eller den rå entiteten (`S` = `T`):
+ * Three type parameters: `T` is the audited entity, `ID` is its key type, and `S`
+ * is the shape of `snapshot` in the response. The app implements [mapSnapshot] and so
+ * chooses what is exposed: a safe DTO (so lazy relations, internal fields or personal
+ * data do not leak into the REST contract), or the raw entity (`S` = `T`):
  * ```
- * // Trygg DTO:
+ * // Safe DTO:
  * class MyEntityHistoryService(em: EntityManager, resolver: ActorDisplayResolver)
  *     : EnversHistoryService<MyEntity, Long, MyEntityView>(MyEntity::class.java, em, resolver) {
  *     override fun mapSnapshot(entity: MyEntity) = MyEntityView(entity.id, entity.navn)
  * }
  *
- * // Rå entitet (velg S = T bevisst):
+ * // Raw entity (choose S = T on purpose):
  * class MyEntityHistoryService(em: EntityManager, resolver: ActorDisplayResolver)
  *     : EnversHistoryService<MyEntity, Long, MyEntity>(MyEntity::class.java, em, resolver) {
  *     override fun mapSnapshot(entity: MyEntity) = entity
  * }
  * ```
  *
- * Resultater returneres alltid nyeste revisjon først (fast sortering, kan ikke overstyres).
- * Aktør-navn hydreres i ett batch-kall per side via [ActorDisplayResolver] for å unngå
- * N+1 mot `fint-flyt-authorization-service`.
+ * Each call reads through its own `EntityManager` from the factory, so it works outside a transaction and for a
+ * persistence unit that open-in-view does not keep open (only the primary one is).
+ *
+ * Results are always newest revision first (fixed order, cannot be overridden).
+ * Actor names are resolved in one batch call per page through [ActorDisplayResolver], to avoid
+ * N+1 calls to `fint-flyt-authorization-service`.
  */
 abstract class EnversHistoryService<T : Any, ID : Any, S : Any>(
     private val entityClass: Class<T>,
@@ -42,9 +46,9 @@ abstract class EnversHistoryService<T : Any, ID : Any, S : Any>(
     private val displayResolver: ActorDisplayResolver,
 ) {
     /**
-     * Mapper en entitets-revisjon til formen som eksponeres i `snapshot`. Returner en trygg
-     * DTO for å unngå å lekke rå JPA-entitet, eller `entity` (med `S` = `T`) for å eksponere
-     * entiteten bevisst.
+     * Maps an entity revision to the shape exposed as `snapshot`. Return a safe DTO
+     * so the raw JPA entity does not leak, or `entity` (with `S` = `T`) to expose the
+     * entity on purpose.
      */
     protected abstract fun mapSnapshot(entity: T): S?
 
@@ -52,9 +56,17 @@ abstract class EnversHistoryService<T : Any, ID : Any, S : Any>(
         id: ID,
         pageable: Pageable,
         filter: HistoryFilter = HistoryFilter(),
-    ): Page<HistoryEntryDto<S>> {
-        val reader = AuditReaderFactory.get(entityManager)
+    ): Page<HistoryEntryDto<S>> =
+        withReader { reader, _ ->
+            findHistory(reader, id, pageable, filter)
+        }
 
+    private fun findHistory(
+        reader: AuditReader,
+        id: ID,
+        pageable: Pageable,
+        filter: HistoryFilter,
+    ): Page<HistoryEntryDto<S>> {
         val query =
             reader
                 .createQuery()
@@ -92,7 +104,7 @@ abstract class EnversHistoryService<T : Any, ID : Any, S : Any>(
                 )
             }
 
-        return PageImpl(content, pageable, countRevisions(id, filter))
+        return PageImpl(content, pageable, countRevisions(reader, id, filter))
     }
 
     open fun findAllHistory(
@@ -104,8 +116,18 @@ abstract class EnversHistoryService<T : Any, ID : Any, S : Any>(
             return PageImpl(emptyList(), pageable, 0)
         }
 
-        val reader = AuditReaderFactory.get(entityManager)
+        return withReader { reader, readerEntityManager ->
+            findAllHistory(reader, readerEntityManager, pageable, filter, propertyFilter)
+        }
+    }
 
+    private fun findAllHistory(
+        reader: AuditReader,
+        readerEntityManager: EntityManager,
+        pageable: Pageable,
+        filter: HistoryFilter,
+        propertyFilter: AuditPropertyFilter?,
+    ): Page<EntityHistoryEntryDto<S, ID>> {
         val query =
             reader
                 .createQuery()
@@ -137,7 +159,7 @@ abstract class EnversHistoryService<T : Any, ID : Any, S : Any>(
                 val revisionType = row[2] as RevisionType
 
                 @Suppress("UNCHECKED_CAST")
-                val entityId = entityManager.entityManagerFactory.persistenceUnitUtil.getIdentifier(row[0]) as ID
+                val entityId = readerEntityManager.entityManagerFactory.persistenceUnitUtil.getIdentifier(row[0]) as ID
 
                 EntityHistoryEntryDto(
                     entityId = entityId,
@@ -149,11 +171,18 @@ abstract class EnversHistoryService<T : Any, ID : Any, S : Any>(
                 )
             }
 
-        return PageImpl(content, pageable, countAllRevisions(filter, propertyFilter))
+        return PageImpl(content, pageable, countAllRevisions(reader, filter, propertyFilter))
     }
 
-    // Envers returnerer et delvis utfylt objekt (kun id) for DEL-revisjoner;
-    // det er mer ærlig å eksponere snapshot som null for slettede entries.
+    // The shared EntityManager proxy gives a new, already closed EntityManager outside a transaction, and Envers keeps
+    // it. Snapshots are mapped before this one is closed, so lazy fields can still be read.
+    private fun <R> withReader(block: (AuditReader, EntityManager) -> R): R =
+        entityManager.entityManagerFactory.createEntityManager().use { readerEntityManager ->
+            block(AuditReaderFactory.get(readerEntityManager), readerEntityManager)
+        }
+
+    // Envers returns a partly filled object (only id) for DEL revisions,
+    // so a null snapshot is more honest for deleted entries.
     private fun snapshotOf(
         row: Array<Any?>,
         revisionType: RevisionType,
@@ -165,11 +194,10 @@ abstract class EnversHistoryService<T : Any, ID : Any, S : Any>(
     }
 
     private fun countRevisions(
+        reader: AuditReader,
         id: ID,
         filter: HistoryFilter,
     ): Long {
-        val reader = AuditReaderFactory.get(entityManager)
-
         val query =
             reader
                 .createQuery()
@@ -188,11 +216,10 @@ abstract class EnversHistoryService<T : Any, ID : Any, S : Any>(
     }
 
     private fun countAllRevisions(
+        reader: AuditReader,
         filter: HistoryFilter,
         propertyFilter: AuditPropertyFilter?,
     ): Long {
-        val reader = AuditReaderFactory.get(entityManager)
-
         val query =
             reader
                 .createQuery()
