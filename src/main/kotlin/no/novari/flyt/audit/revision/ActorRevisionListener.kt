@@ -7,6 +7,7 @@ import org.slf4j.LoggerFactory
 import org.springframework.beans.factory.ObjectProvider
 import org.springframework.beans.factory.annotation.Qualifier
 import org.springframework.data.domain.AuditorAware
+import kotlin.jvm.optionals.getOrNull
 
 /**
  * Hibernate Envers [RevisionListener] that sets [ActorRevisionEntity.actor] for every revision.
@@ -22,7 +23,7 @@ class ActorRevisionListener(
         if (auditor == null) {
             logger.warn("No 'flytAuditorAware' bean, so the revision actor is System. Check that FlytAuditAutoConfiguration is active.")
         }
-        (revisionEntity as ActorRevisionEntity).actor = auditor?.currentAuditor?.orElse(null) ?: Actor.System
+        (revisionEntity as ActorRevisionEntity).actor = auditor?.currentAuditor?.getOrNull() ?: Actor.System
     }
 
     private companion object {

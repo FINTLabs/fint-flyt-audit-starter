@@ -7,6 +7,7 @@ import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.boot.data.jpa.test.autoconfigure.DataJpaTest
 import org.springframework.boot.jdbc.test.autoconfigure.AutoConfigureTestDatabase
 import org.springframework.boot.testcontainers.service.connection.ServiceConnection
+import org.springframework.data.repository.findByIdOrNull
 import org.testcontainers.junit.jupiter.Container
 import org.testcontainers.junit.jupiter.Testcontainers
 import org.testcontainers.postgresql.PostgreSQLContainer
@@ -31,7 +32,7 @@ class ActorJsonbIntegrationTest {
         val saved = repository.saveAndFlush(ActorHolderEntity(actor = Actor.User(oid)))
         em.clear()
 
-        val reloaded = repository.findById(saved.id!!).orElseThrow()
+        val reloaded = checkNotNull(repository.findByIdOrNull(saved.id!!))
         assertThat(reloaded.actor).isEqualTo(Actor.User(oid))
 
         assertActorJson(saved.id!!, """{"type":"USER","oid":"$oid"}""")
@@ -42,7 +43,7 @@ class ActorJsonbIntegrationTest {
         val saved = repository.saveAndFlush(ActorHolderEntity(actor = Actor.System))
         em.clear()
 
-        val reloaded = repository.findById(saved.id!!).orElseThrow()
+        val reloaded = checkNotNull(repository.findByIdOrNull(saved.id!!))
         assertThat(reloaded.actor).isEqualTo(Actor.System)
 
         assertActorJson(saved.id!!, """{"type":"SYSTEM"}""")
@@ -53,7 +54,7 @@ class ActorJsonbIntegrationTest {
         val saved = repository.saveAndFlush(ActorHolderEntity(actor = Actor.M2M("client-abc")))
         em.clear()
 
-        val reloaded = repository.findById(saved.id!!).orElseThrow()
+        val reloaded = checkNotNull(repository.findByIdOrNull(saved.id!!))
         assertThat(reloaded.actor).isEqualTo(Actor.M2M("client-abc"))
 
         assertActorJson(saved.id!!, """{"type":"M2M","clientId":"client-abc"}""")
@@ -64,7 +65,7 @@ class ActorJsonbIntegrationTest {
         val saved = repository.saveAndFlush(ActorHolderEntity(actor = Actor.Unknown))
         em.clear()
 
-        val reloaded = repository.findById(saved.id!!).orElseThrow()
+        val reloaded = checkNotNull(repository.findByIdOrNull(saved.id!!))
         assertThat(reloaded.actor).isEqualTo(Actor.Unknown)
 
         assertActorJson(saved.id!!, """{"type":"UNKNOWN"}""")
