@@ -11,6 +11,7 @@ import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Test
 import org.mockito.Mockito.mock
 import org.springframework.beans.factory.getBean
+import org.springframework.beans.factory.getBeansOfType
 import org.springframework.boot.autoconfigure.AutoConfigurations
 import org.springframework.boot.hibernate.autoconfigure.HibernatePropertiesCustomizer
 import org.springframework.boot.micrometer.metrics.autoconfigure.CompositeMeterRegistryAutoConfiguration
@@ -40,7 +41,7 @@ class FlytAuditAutoConfigurationTest {
         contextRunner
             .withUserConfiguration(CustomAuditorAwareConfig::class.java)
             .run { context ->
-                assertThat(context.getBeansOfType(AuditorAware::class.java)).hasSize(1)
+                assertThat(context.getBeansOfType<AuditorAware<*>>()).hasSize(1)
                 assertThat(context.getBean("flytAuditorAware")).isInstanceOf(ActorAuditorAware::class.java)
             }
     }

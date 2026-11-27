@@ -6,6 +6,8 @@ import no.novari.flyt.audit.actor.HttpActorNameLookup
 import no.novari.flyt.audit.config.FlytAuditAutoConfiguration
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Test
+import org.springframework.beans.factory.getBean
+import org.springframework.beans.factory.getBeansOfType
 import org.springframework.boot.WebApplicationType
 import org.springframework.boot.autoconfigure.EnableAutoConfiguration
 import org.springframework.boot.builder.SpringApplicationBuilder
@@ -42,11 +44,11 @@ class Oauth2ProfileFileReproTest {
                 .profiles("oauth2-repro")
                 .run()
         try {
-            assertThat(context.getBeansOfType(ClientRegistrationRepository::class.java)).hasSize(1)
+            assertThat(context.getBeansOfType<ClientRegistrationRepository>()).hasSize(1)
             assertThat(context.containsBean("authorizationRestClient")).isTrue()
-            assertThat(context.getBean(ActorNameLookup::class.java))
+            assertThat(context.getBean<ActorNameLookup>())
                 .isInstanceOf(HttpActorNameLookup::class.java)
-            assertThat(context.getBeansOfType(ActorDisplayResolver::class.java)).hasSize(1)
+            assertThat(context.getBeansOfType<ActorDisplayResolver>()).hasSize(1)
         } finally {
             context.close()
             System.clearProperty("fint.flyt.authorization.sso.client-id")

@@ -6,6 +6,7 @@ import no.novari.flyt.audit.actor.HttpActorNameLookup
 import no.novari.flyt.audit.config.FlytAuditAutoConfiguration
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Test
+import org.springframework.beans.factory.getBean
 import org.springframework.boot.autoconfigure.AutoConfigurations
 import org.springframework.boot.restclient.autoconfigure.RestClientAutoConfiguration
 import org.springframework.boot.security.oauth2.client.autoconfigure.OAuth2ClientAutoConfiguration
@@ -45,7 +46,7 @@ class AuthorizationRestClientConfigurationIntegrationTest {
                 assertThat(context).hasNotFailed()
                 assertThat(context).hasBean("authorizationRestClient")
                 assertThat(context).hasSingleBean(AuthorizationClient::class.java)
-                assertThat(context.getBean(ActorNameLookup::class.java))
+                assertThat(context.getBean<ActorNameLookup>())
                     .isInstanceOf(HttpActorNameLookup::class.java)
                 assertThat(context).hasSingleBean(ActorDisplayResolver::class.java)
             }
